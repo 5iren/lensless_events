@@ -5,15 +5,15 @@
 ### Libraries:
 Pytorch:
 
-    `conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch`
+    conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
 
 OpenCV:
 
-    `pip install opencv-python`
+    pip install opencv-python
 
 Matplotlib: 
 
-    `pip install matplotlib`
+    pip install matplotlib
 
 ## Scripts:
 
