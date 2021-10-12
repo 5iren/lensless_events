@@ -1,5 +1,9 @@
 import cv2
 import numpy as np
+import os
+import torch
+from torch.utils.data import Dataset
+from representation import event_reader, event_transforms
 
 def makeGaussian(size, fwhm = 3, center=None):
     """ Make a square gaussian kernel.
@@ -82,3 +86,62 @@ def fftConvolve(frame, psf):
 
     return frame_fft
     
+#Create dataset class
+class lenslessEvents(Dataset):
+    def __init__(self, lensless_events_dir, gt_events_dir, num_bins = 3):
+        self.lensless_events_dir = lensless_events_dir
+        self.gt_events_dir = gt_events_dir
+        self.num_bins = num_bins
+        self.width = 346
+        self.height = 260
+
+        #Get list of event windows
+        _, _, self.lensless_event_files = next(os.walk(self.lensless_events_dir))
+        self.lensless_event_files.sort()
+
+        _, _, self.gt_event_files = next(os.walk(self.gt_events_dir))
+        self.gt_event_files.sort()
+
+
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        ##### Get Lensless voxel grid #####
+        #Create voxel grid from events
+        lensless_data = np.load(os.path.join(self.lensless_events_dir, self.lensless_event_files[idx]))
+        t = lensless_data['t']
+        x = lensless_data['x']
+        y = lensless_data['y']
+        p = lensless_data['p']
+
+        lensless_event_data = event_reader.EventData(t, x, y, p, self.width, self.height)
+        lensless_voxel = event_transforms.ToVoxelGrid(self.num_bins)(lensless_event_data)
+
+        #Normalize voxel 
+        lensless_voxel -= lensless_voxel.min()
+        lensless_voxel /= lensless_voxel.max()
+
+        #Convert to tensor
+        lensless_voxel = torch.as_tensor(lensless_voxel, dtype=torch.float32)
+
+        ##### Get GT voxel grid #####
+        #Create voxel grid from events
+        gt_data = np.load(os.path.join(self.gt_events_dir, self.gt_event_files[idx]))
+        t = gt_data['t']
+        x = gt_data['x']
+        y = gt_data['y']
+        p = gt_data['p']
+
+        gt_event_data = event_reader.EventData(t, x, y, p, self.width, self.height)
+        gt_voxel = event_transforms.ToVoxelGrid(self.num_bins)(gt_event_data)
+
+        #Normalize voxel 
+        gt_voxel -= gt_voxel.min()
+        gt_voxel /= gt_voxel.max()
+
+        #Convert to tensor
+        gt_voxel = torch.as_tensor(gt_voxel, dtype=torch.float32)
+        
+        return lensless_voxel, gt_voxel
