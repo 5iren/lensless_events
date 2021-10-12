@@ -13,6 +13,7 @@ gt_events_dir = 'data/lensless_videos_dataset/gt_events'
 #Timewindow properties
 timewindow_ms = 30
 max_time_ms = 3000 - timewindow_ms
+min_events = 50
 
 #Load all txt files in directories
 _, _, gt_txt_files = next(os.walk(gt_txt_dir))
@@ -49,7 +50,9 @@ for txt_file_name in lensless_txt_files:
         #If events withing timewindow: save numpy array
         window_idxs = (t >= t_start) & (t < t_end)
         win_file = os.path.join(lensless_events_dir, make_filename(idx, video_name))
-        if t[window_idxs].shape[0] > 0:
+
+        #Save window if it contains more than the minimum events
+        if t[window_idxs].shape[0] > min_events:
             np.savez(win_file, t=t[window_idxs], x=x[window_idxs], y=y[window_idxs], p=p[window_idxs])
 
         idx += 1
@@ -79,7 +82,9 @@ for txt_file_name in gt_txt_files:
         #If events withing timewindow: save numpy array
         window_idxs = (t >= t_start) & (t < t_end)
         win_file = os.path.join( gt_events_dir, make_filename(idx, video_name))
-        if t[window_idxs].shape[0] > 0:
+
+        #Save window if it contains more than the minimum events
+        if t[window_idxs].shape[0] > min_events:
             np.savez(win_file, t=t[window_idxs], x=x[window_idxs], y=y[window_idxs], p=p[window_idxs])
 
         idx += 1
