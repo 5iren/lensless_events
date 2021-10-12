@@ -6,35 +6,12 @@ from torchvision import transforms
 import torchvision.transforms.functional as F
 from torchvision.io import write_jpeg
 import numpy as np
-from unet import UNet
+from model.unet import UNet
 from torch.utils.data import DataLoader
 from dogNoisy import dogNoisy, UnNormalize
 import matplotlib.pyplot as plt
 from PIL import Image
 import cv2
-from psnr import PSNR
-
-def saturateImage(image):
-    """ Saturates image to avoid over or underflow (0-255)
-        image: CxWxH tensor (float)
-        returns: saturated image (uint8)
-        """
-    image *= 255
-    image = np.array(image)
-    image = np.transpose(image, (1,2,0))
-
-    b, g, r  = cv2.split(image)
-    b[b > 255] = 255
-    b[b < 0] = 0
-    g[g > 255] = 255
-    g[g < 0] = 0
-    r[r > 255] = 255
-    r[r < 0] = 0
-    image = cv2.merge((b, g, r))
-
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-    return image.astype(np.uint8)
 
 
 #Set paths
@@ -60,6 +37,14 @@ unorm = UnNormalize(mean, std)
 train_data = dogNoisy(train_dataset_path, train_gt_path, transform=transform)
 test_data = dogNoisy(test_dataset_path, test_gt_path, transform=transform)
 
+# lensless_path = 'data/lensless_videos_dataset/lensless_events'
+# gt_path = 'data/lensless_videos_dataset/gt_events'
+# #lensless_data, gt_data = lenslessEvents(lensless_path, gt_path)
+# event_dataset = lenslessEvents(lensless_path, gt_path)
+
+# lensless, gt = event_dataset[0]
+# print(lensless.mean())
+# print(gt.mean())
 
 #Create dataloaders
 trainloader = DataLoader(train_data, batch_size=1, shuffle=True)
