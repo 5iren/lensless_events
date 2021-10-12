@@ -15,9 +15,15 @@ Matplotlib:
 
     pip install matplotlib
 
+Pandas:
+
+    conda install pandas
+
 ## Scripts:
 
-simPSF: simulates grayscale video captured with lensless camera and a diffraction layer (PSF convolution) 
+`simPSF.py` simulates grayscale video captured with lensless camera and a diffraction layer (PSF convolution) 
+
+`createTimeWindows.py` creates numpy array files per event window from an event .txt file 
 
 
 
