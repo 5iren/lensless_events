@@ -1,6 +1,6 @@
 #import os
 import torch
-#from torchvision import transforms
+from torchvision import transforms
 #import torchvision.transforms.functional as F
 import numpy as np
 from model.unet import UNet
@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 #from PIL import Image
 #import cv2
-from utils import lenslessEvents
+from utils import lenslessEventsVoxel, lenslessEvents
 
 
 #Set paths
@@ -19,16 +19,17 @@ gt_path = 'data/lensless_videos_dataset/gt_events'
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print("[INFO] Using device: ", device)
 
+#Transforms
+transform = None
+# mean = (0, 0, 0)
+# std = (0.2, 0.2, 0.2)
+#transform = transforms.Compose([transforms.Normalize(mean, std)])
+#unorm = UnNormalize(mean, std)
+
 #Create datasets
 print("[INFO] Loading dataset and dataloader...")
-train_data = lenslessEvents(lensless_path, gt_path)
-
-#Transforms
-# mean = (0.5, 0.5, 0.5)
-# std = (0.2, 0.2, 0.2)
-# transform = transforms.Compose([transforms.ConvertImageDtype(torch.float),
-#                                 transforms.Normalize(mean, std)])
-# unorm = UnNormalize(mean, std)
+train_data = lenslessEventsVoxel(lensless_path, gt_path, transform = transform)
+#train_data = lenslessEvents(lensless_path, gt_path)
 
 #Create dataloaders
 trainloader = DataLoader(train_data, batch_size=1, shuffle=True)
@@ -77,21 +78,13 @@ for epoch in range(epochs):
     # with torch.no_grad():
     #     for data in testloader:
     #         #Get image and ground truth
-    #         noisy, gt = data[0].to(device), data[1].to(device)
+    #         lensless, gt = data[0].to(device), data[1].to(device)
 
     #         #Forward 
-    #         output = net(noisy)
+    #         output = net(lensless)
     #         loss = criterion(output, gt)
     #         test_running_loss += loss.item()
 
-    #         #Compute PSNR
-    #         image = unorm(output.detach().cpu()[0])
-    #         gt_image = unorm(gt.detach().cpu()[0])
-    #         image = saturateImage(image)
-    #         gt_image = saturateImage(gt_image)
-    #         test_running_psnr += PSNR(gt_image, image)
-
-    #cv2.imwrite('results/' + str(epoch+1).zfill(3) + '.jpeg', image)
 
     #Print Statistics
     train_loss.append(train_running_loss / len(trainloader))
@@ -100,18 +93,24 @@ for epoch in range(epochs):
     print("[%3d / %3d] Train loss: %.6f" % (epoch + 1, epochs, 
                                             train_running_loss / len(trainloader)))
 
-#Print voxels
-lensless = np.transpose(lensless[0].cpu().detach().numpy(), (1,2,0))
-gt = np.transpose(gt[0].cpu().detach().numpy(), (1,2,0))
-output = np.transpose(output[0].cpu().detach().numpy(), (1,2,0))
+    # lensless = np.transpose(lensless[0][0].cpu().detach().numpy(), (1,2,0))
+    # gt = np.transpose(gt[0][0].cpu().detach().numpy(), (1,2,0))
+    # output = np.transpose(output[0][0].cpu().detach().numpy(), (1,2,0))
 
-   
-fig0, ax0 = plt.subplots(1,3)
-ax0[0].imshow(lensless)
-ax0[1].imshow(gt)
-ax0[2].imshow(output)
+    lensless = lensless[0][0].cpu().detach().numpy()
+    gt = gt[0][0].cpu().detach().numpy()
+    output = output[0][0].cpu().detach().numpy()
 
-plt.show()
+    
+    fig0, ax0 = plt.subplots(1,3)
+    ax0[0].imshow(lensless)
+    ax0[0].set_title('Lensless')
+    ax0[1].imshow(gt)
+    ax0[1].set_title('Groundtruth')
+    ax0[2].imshow(output)
+    ax0[2].set_title('Output')
+    fig0.savefig('results/'+str(epoch+1).zfill(3) + '_comparisons.png')
+
                                                             
 
 #Save trained model
@@ -125,5 +124,5 @@ ax1.legend()
 ax1.set_title("Train loss")
 ax1.set_xlabel("Epoch")
 ax1.set_ylabel("Loss")
-ax1.set_ylim(top = 1, bottom= 0)
+ax1.set_ylim(top = max(train_loss)*1.1 , bottom= 0)
 fig1.savefig('plots/losses.png')
