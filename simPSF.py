@@ -7,16 +7,17 @@ from utils import framePreprocess, fftConvolve
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--video_name",   help="name of the video", required=True)
+    parser.add_argument("-r", "--frame_rate",   help="name of the video", default=30, type=int)
 
     #Get arguments
     args = parser.parse_args()
     video_name = args.video_name
+    fps = args.frame_rate
     
     #Camera settings (DAVIS camera)
     davis_width = 346
     davis_height = 260
     davis_ratio = davis_height / davis_width
-    fps = 40
 
     #Directory settings
     video_dir = "data/original_videos/"
@@ -26,8 +27,9 @@ if __name__ == "__main__":
     single_name = video_name.split('.')
     result_name = results_dir + single_name[0] + '.avi'
     cropped_name = cropped_dir + single_name[0] + '.avi'
-    # psf_path = 'data/psf/psf_16bit_baffle.tif'
-    psf_path = 'data/psf/pinholePSF.png'
+    psf_path = 'data/psf/psf_16bit_baffle.tif'
+    # psf_path = 'data/psf/pinholePSF.png'
+    #psf_path = 'data/psf/delta2.png'
 
     
     #Print arguments
@@ -40,8 +42,16 @@ if __name__ == "__main__":
     print("---------------------------------------")
 
     #Create PSF 
-    psf = cv2.imread(psf_path, 0)
-    psf = cv2.resize(psf, (davis_width, davis_height)) #resize to sensor shape
+    # psf = cv2.imread(psf_path, 0)
+    # psf = cv2.resize(psf, (davis_width, davis_height)) #resize to sensor shape
+    # psf = psf / psf.sum() #Normalize
+
+    psf = np.load("data/psf/psf_3.npy")
+    psf /= psf.max()
+    psf *= 255
+    psf = psf.astype('uint8')
+    psf = cv2.cvtColor(psf, cv2.COLOR_RGB2GRAY)
+    psf = cv2.resize(psf, (davis_width, davis_height))
     psf = psf / psf.sum() #Normalize
 
     #Create video object
@@ -73,9 +83,10 @@ if __name__ == "__main__":
 
             #Compute convolution
             lensless = fftConvolve(frame/255., psf)
+            #print(lensless.max())
             lensless = np.uint8(lensless*255)
-
-            cv2.imwrite("lensless.png", lensless)
+            #print(lensless.max())
+            #cv2.imwrite("lensless.png", lensless)
 
             #Create video with write
             conv_out.write(lensless)
