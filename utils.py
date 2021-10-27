@@ -61,6 +61,9 @@ def framePreprocess(frame, davis_height, davis_width, davis_ratio):
         width_difference = new_width - davis_width
         cropped_frame = frame[:, int(width_difference/2):int(width_difference/2+davis_width)]
 
+    elif frame_ratio == davis_ratio:
+        cropped_frame = frame
+
     assert cropped_frame.shape[0] == davis_height, 'Height is not '+str(davis_height)+". Frame height: " +str(frame.shape[0])
     assert cropped_frame.shape[1] == davis_width, 'Width is not '+str(davis_width)+". Frame width: " +str(frame.shape[1])
 
