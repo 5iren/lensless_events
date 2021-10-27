@@ -26,7 +26,10 @@ def makeGaussian(size, fwhm = 3, center=None):
     gaussian = full_gaussian / full_gaussian.sum()
     return  gaussian
 
-def framePreprocess(frame, davis_height, davis_width, davis_ratio):
+def framePreprocess(frame, sensor_height, sensor_width):
+    #Get ratio
+    sensor_ratio = sensor_height / sensor_width
+
     #Convert to grayscale
     frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
 
@@ -35,37 +38,37 @@ def framePreprocess(frame, davis_height, davis_width, davis_ratio):
     frame_width = frame.shape[1]
     frame_ratio = frame_height / frame_width
 
-    #If frame_ratio > davis_ratio: resize width
-    if frame_ratio > davis_ratio:
+    #If frame_ratio > sensor_ratio: resize width
+    if frame_ratio > sensor_ratio:
         #Get new frame and width from ratio
-        new_height = int(davis_width * frame_ratio)
-        new_width = davis_width
+        new_height = int(sensor_width * frame_ratio)
+        new_width = sensor_width
 
         #Resize
         frame = cv2.resize(frame, (new_width, new_height))
 
         #Center crop
-        height_difference = new_height - davis_height
-        cropped_frame = frame[int(height_difference/2):int(height_difference/2+davis_height),:]
+        height_difference = new_height - sensor_height
+        cropped_frame = frame[int(height_difference/2):int(height_difference/2+sensor_height),:]
 
-    #If frame_ratio < davis_ratio: resize height
-    elif frame_ratio < davis_ratio:
+    #If frame_ratio < sensor_ratio: resize height
+    elif frame_ratio < sensor_ratio:
         #Get new frame and width from ratio
-        new_height = davis_height
-        new_width = int(davis_height / frame_ratio)
+        new_height = sensor_height
+        new_width = int(sensor_height / frame_ratio)
         
         #Resize
         frame = cv2.resize(frame, (new_width, new_height))
 
         #Center crop
-        width_difference = new_width - davis_width
-        cropped_frame = frame[:, int(width_difference/2):int(width_difference/2+davis_width)]
+        width_difference = new_width - sensor_width
+        cropped_frame = frame[:, int(width_difference/2):int(width_difference/2+sensor_width)]
 
-    elif frame_ratio == davis_ratio:
+    elif frame_ratio == sensor_ratio:
         cropped_frame = frame
 
-    assert cropped_frame.shape[0] == davis_height, 'Height is not '+str(davis_height)+". Frame height: " +str(frame.shape[0])
-    assert cropped_frame.shape[1] == davis_width, 'Width is not '+str(davis_width)+". Frame width: " +str(frame.shape[1])
+    assert cropped_frame.shape[0] == sensor_height, 'Height is not '+str(sensor_height)+". Frame height: " +str(frame.shape[0])
+    assert cropped_frame.shape[1] == sensor_width, 'Width is not '+str(sensor_width)+". Frame width: " +str(frame.shape[1])
 
     return cropped_frame
 
