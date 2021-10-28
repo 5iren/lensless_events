@@ -1,16 +1,14 @@
 import os
 import torch
-import lpips
 from torchvision import transforms
 import torchvision.transforms.functional as F
 import numpy as np
-from unet import UNet
+from model.unet import UNet
 from torch.utils.data import DataLoader
-from dogNoisy import dogNoisy, UnNormalize
+from utils import lenslessEventsVoxel, lenslessEvents
 import matplotlib.pyplot as plt
 from PIL import Image
 import cv2
-from psnr import PSNR
 
 def saturateImage(image):
     """ Saturates image to avoid over or underflow (0-255)
@@ -36,29 +34,32 @@ def saturateImage(image):
 
 
 #Set paths
-test_dataset_path = 'data/dog_dataset_noisy/test/'
-test_gt_path = 'data/dog_dataset_noisy/test_gt/'
-model_path = 'state_dict.pth'
+dataset_dir = 'data/lensless_videos_dataset/'
+test_lensless_path = dataset_dir + 'test/lensless_events'
+test_gt_path = dataset_dir + 'test/gt_events'
+model_path = 'model/state_dict.pth'
+save_path = 'results/inference_results/'
 
 #Load CUDA
-# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# print("[INFO] Using device: ", device)
+#device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+#print("[INFO] Using device: ", device)
 
 #Create datasets
 print("[INFO] Loading dataset...")
 
 #Transforms
-mean = (0.5, 0.5, 0.5)
-std = (0.2, 0.2, 0.2)
-transform = transforms.Compose([transforms.ConvertImageDtype(torch.float),
-                                transforms.Normalize(mean, std)])
-unorm = UnNormalize(mean, std)
+transform = None
+# mean = (0, 0, 0)
+# std = (0.2, 0.2, 0.2)
+#transform = transforms.Compose([transforms.Normalize(mean, std)])
+#unorm = UnNormalize(mean, std)
 
-#Load datasets
-test_data = dogNoisy(test_dataset_path, test_gt_path, transform=transform)
+#Create datasets
+print("[INFO] Loading dataset and dataloader...")
+test_data = lenslessEventsVoxel(test_lensless_path, test_gt_path, transform = transform)
 
 #Create dataloaders
-testloader = DataLoader(test_data, batch_size=1, shuffle=True)
+testloader = DataLoader(test_data, batch_size=1, shuffle=False)
 
 #Load trained Model
 net = UNet(3,3)
@@ -68,45 +69,48 @@ net.eval()
 #Loss function and optimizer
 criterion = torch.nn.MSELoss()
 
-
-#Train loop
+#Infer loop
 print("[INFO] Inference...")
 test_loss = []
-test_psnr = []
 test_running_loss = 0
-test_running_psnr = 0
 
 #Test
+result_num = 0
 with torch.no_grad():
 
     for data in testloader:
+        result_num +=1
+        lensless, gt = data
+        output = net(lensless)
 
-        noisy, gt = data
+        #Transpose to display
+        lensless = np.transpose(lensless[0], (1,2,0))
+        gt = np.transpose(gt[0], (1,2,0))
+        output = np.transpose(output[0], (1,2,0))
 
-        output = net(noisy)
 
-        image = saturateImage(unorm(noisy[0]))
-        output = saturateImage(unorm(output[0]))
-        gt_image = saturateImage(unorm(gt[0]))
+        # #Show in Plot
+        # fig, ax = plt.subplots(1,3, figsize=(12,4))
+        # fig.tight_layout()
+        # ax[0].imshow(lensless)
+        # ax[0].set_title("Lensless")
+        # ax[1].imshow(gt)
+        # ax[1].set_title("Ground Truth")
+        # ax[2].imshow(output)
+        # ax[2].set_title("Output")
+        # ax[0].set_xticks([])
+        # ax[0].set_yticks([])
+        # ax[1].set_xticks([])
+        # ax[1].set_yticks([])
+        # ax[2].set_xticks([])
+        # ax[2].set_yticks([])
 
-        noisy_psnr = PSNR(gt_image, image)
-        output_psnr = PSNR(gt_image, output)
+        # plt.show()
 
-        fig, ax = plt.subplots(1,3)
-        ax[0].imshow(image)
-        ax[0].set_title("Noisy - PSNR: {:.2f} dB".format(noisy_psnr))
-        ax[1].imshow(output)
-        ax[1].set_title("Output - PSNR: {:.2f} dB".format(output_psnr))
-        ax[2].imshow(gt_image)
-        ax[2].set_title("Ground Truth")
-
-        ax[0].axes.get_xaxis().set_visible(False)
-        ax[0].axes.get_yaxis().set_visible(False)
-        ax[1].axes.get_xaxis().set_visible(False)
-        ax[1].axes.get_yaxis().set_visible(False)
-        ax[2].axes.get_xaxis().set_visible(False)
-        ax[2].axes.get_yaxis().set_visible(False)
-
-        plt.show()
+        #Save
+        gt_path = save_path + str(result_num).zfill(3) + "_gt.png"
+        result_path = save_path + str(result_num).zfill(3) + "_output.png"
+        cv2.imwrite(gt_path, gt.numpy()*255)
+        cv2.imwrite(result_path, output.numpy()*255)
 
 
