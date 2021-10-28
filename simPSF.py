@@ -28,8 +28,8 @@ if __name__ == "__main__":
     single_name = video_name.split('.')
     result_name = results_dir + single_name[0] + '.avi'
     cropped_name = cropped_dir + single_name[0] + '.avi'
-    # psf_path = 'data/videos_dataset/psf/psf_16bit_baffle.tif'
-    psf_path = 'data/videos_dataset/psf/pinholePSF.png'
+    psf_path = 'data/videos_dataset/psf/psf_16bit_baffle.tif'
+    #psf_path = 'data/videos_dataset/psf/pinholePSF.png'
     #psf_path = 'data/videos_dataset/psf/delta2.png'
 
     
