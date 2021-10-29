@@ -5,7 +5,7 @@ import torchvision.transforms.functional as F
 import numpy as np
 from model.unet import UNet
 from torch.utils.data import DataLoader
-from utils import lenslessEventsVoxel, lenslessEvents
+from src.nn_utils import lenslessEventsVoxel, lenslessEvents
 import matplotlib.pyplot as plt
 from PIL import Image
 import cv2
@@ -35,8 +35,8 @@ def saturateImage(image):
 
 #Set paths
 dataset_dir = 'data/lensless_videos_dataset/'
-test_lensless_path = dataset_dir + 'test/lensless_events'
-test_gt_path = dataset_dir + 'test/gt_events'
+test_lensless_path = dataset_dir + 'train/lensless_events'
+test_gt_path = dataset_dir + 'train/gt_events'
 model_path = 'model/state_dict.pth'
 save_path = 'results/inference_results/'
 
@@ -59,7 +59,7 @@ print("[INFO] Loading dataset and dataloader...")
 test_data = lenslessEventsVoxel(test_lensless_path, test_gt_path, transform = transform)
 
 #Create dataloaders
-testloader = DataLoader(test_data, batch_size=1, shuffle=False)
+testloader = DataLoader(test_data, batch_size=1, shuffle=True)
 
 #Load trained Model
 net = UNet(3,3)
@@ -70,7 +70,7 @@ net.eval()
 criterion = torch.nn.MSELoss()
 
 #Infer loop
-print("[INFO] Inference...")
+print("[INFO] Performing inference on {} examples".format(len(testloader)))
 test_loss = []
 test_running_loss = 0
 
@@ -107,10 +107,44 @@ with torch.no_grad():
 
         # plt.show()
 
-        #Save
-        gt_path = save_path + str(result_num).zfill(3) + "_gt.png"
-        result_path = save_path + str(result_num).zfill(3) + "_output.png"
-        cv2.imwrite(gt_path, gt.numpy()*255)
-        cv2.imwrite(result_path, output.numpy()*255)
+        #Parameter statistics
+        print("Statistics")
+        print("Lensless max: ", gt.max())
+        print("Lensless min: ", gt.min())
+        print("Lensless mean: ", gt.mean())
+        print("Lensless std: ", gt.std())
+        
+        # lensless_normalized = lensless - lensless.mean() 
+        # lensless_normalized /= lensless.std()
+        lensless_normalized = gt * -1
+
+        print("Lensless_normalized max: ", lensless_normalized.max())
+        print("Lensless_normalized min: ", lensless_normalized.min())
+        print("Lensless_normalized mean: ", lensless_normalized.mean())
+        print("Lensless_normalized std: ", lensless_normalized.std())
+
+
+
+        #Show in Plot
+        fig, ax = plt.subplots(1,2, figsize=(12,4))
+        fig.tight_layout()
+        ax[0].imshow(gt)
+        ax[0].set_title("Groundtruth")
+        ax[1].imshow(lensless_normalized)
+        ax[1].set_title("Normalized")
+        ax[0].set_xticks([])
+        ax[0].set_yticks([])
+        ax[1].set_xticks([])
+        ax[1].set_yticks([])
+        plt.show()
+        brea
+
+        
+
+        # #Save
+        # gt_path = save_path + str(result_num).zfill(3) + "_gt.png"
+        # result_path = save_path + str(result_num).zfill(3) + "_output.png"
+        # cv2.imwrite(gt_path, gt.numpy()*255)
+        # cv2.imwrite(result_path, output.numpy()*255)
 
 

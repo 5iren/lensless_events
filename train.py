@@ -6,7 +6,7 @@ import numpy as np
 from model.unet import UNet
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
-from utils import lenslessEventsVoxel, lenslessEvents
+from src.nn_utils import lenslessEventsVoxel, lenslessEvents
 
 
 def train(epochs, test_epochs, learning_rate, dataset_dir):

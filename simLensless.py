@@ -1,8 +1,7 @@
 import cv2
 import argparse
 import numpy as np
-from utils import framePreprocess, fftConvolve
-
+from src.psf_utils import match_dim, load_psf, fftConvolve
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -30,7 +29,7 @@ if __name__ == "__main__":
     cropped_name = cropped_dir + single_name[0] + '.avi'
     psf_path = 'data/videos_dataset/psf/psf_16bit_baffle.tif'
     #psf_path = 'data/videos_dataset/psf/pinholePSF.png'
-    #psf_path = 'data/videos_dataset/psf/delta2.png'
+
 
     
     #Print arguments
@@ -42,10 +41,11 @@ if __name__ == "__main__":
     print("FPS:               ", fps)
     print("---------------------------------------")
 
-    #Create PSF 
-    psf = cv2.imread(psf_path, 0)
-    psf = cv2.resize(psf, (sensor_width, sensor_height)) #resize to sensor shape
-    psf = psf / psf.sum() #Normalize
+    #Load and resize PSF 
+    psf = load_psf(psf_path)
+    psf = cv2.resize(psf, (sensor_width, sensor_height))
+    psf /= psf.sum() #Normalize
+    psf = match_dim(psf, (sensor_height*2, sensor_width*2)) #Adds padding to avoid 
 
     #Create video object
     cap = cv2.VideoCapture(video_path)
@@ -54,7 +54,6 @@ if __name__ == "__main__":
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     crop_out = cv2.VideoWriter(cropped_name, fourcc, fps, (sensor_width, sensor_height), 0)
     conv_out = cv2.VideoWriter(result_name, fourcc, fps, (sensor_width, sensor_height), 0)
-
 
     #Check if video opened succesfully
     if (cap.isOpened()==False):
@@ -69,18 +68,20 @@ if __name__ == "__main__":
         #If read succesful
         if ret == True:
             # Preprocess frame
-            frame = framePreprocess(frame, sensor_height, sensor_width) 
+            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+            frame = frame.astype('float64') / 255.0
+            cropped_frame = cv2.resize(frame, (sensor_width, sensor_height))
+            frame = match_dim(cropped_frame, (sensor_height*2, sensor_width*2))
 
             # Save cropped video
-            crop_out.write(frame)
+            crop_out.write(np.uint8(cropped_frame*255))
 
             #Compute convolution
-            lensless = fftConvolve(frame/255., psf)
-            lensless = np.uint8(lensless*255)
-            #cv2.imwrite("lensless.png", lensless)
+            lensless = fftConvolve(frame, psf)
+            lensless = match_dim(lensless, (sensor_height, sensor_width))
 
             #Create video with write
-            conv_out.write(lensless)
+            conv_out.write(np.uint8(lensless*255))
 
         else:
             break
