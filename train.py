@@ -2,6 +2,7 @@
 import argparse
 import torch
 from torchvision import transforms
+from torchsummary import summary
 import numpy as np
 from model.unet import UNet
 from torch.utils.data import DataLoader
@@ -36,11 +37,14 @@ def train(epochs, test_epochs, learning_rate, dataset_dir):
     #Create dataloaders
     trainloader = DataLoader(train_data, batch_size=1, shuffle=True)
     testloader = DataLoader(test_data, batch_size=1, shuffle=True)
+    print("\tTrain ataset length: ", len(trainloader))
+    print("\tTest ataset length: ", len(testloader))
 
     #Load Model
     print("[INFO] Loading model...")
     net = UNet(3,3)
     net.to(device)
+    summary(net, ( 3, 260, 348)) #prints summary
 
     #Loss function and optimizer
     criterion = torch.nn.MSELoss()
@@ -107,6 +111,16 @@ def train(epochs, test_epochs, learning_rate, dataset_dir):
             # gt = gt[0][0].cpu().detach().numpy()
             # output = output[0][0].cpu().detach().numpy()
 
+            #Normalize before displaying
+            lensless = ( lensless - lensless.min() ) / ( lensless.max() - lensless.min() )
+            gt = ( gt - gt.min() ) / ( gt.max() - gt.min() )
+            output = ( output - output.min() ) / ( output.max() - output.min() )
+
+            test_lensless = ( test_lensless - test_lensless.min() ) / ( test_lensless.max() - test_lensless.min() )
+            test_gt = ( test_gt - test_gt.min() ) / ( test_gt.max() - test_gt.min() )
+            test_output = ( test_output - test_output.min() ) / ( test_output.max() - test_output.min() )
+
+
             #Draw figure with input, groundtruth and output from training data
             fig, ax = plt.subplots(1,3, figsize=(12,4))
             fig.tight_layout()
@@ -144,7 +158,7 @@ def train(epochs, test_epochs, learning_rate, dataset_dir):
                                                             
 
     #Save trained model
-    torch.save(net.state_dict(), 'model/state_dict.pth')
+    torch.save(net.state_dict(), 'model/'+str(epochs)+'_state_dict.pth')
 
     #Save Loss graphic
     fig1, ax1 = plt.subplots()

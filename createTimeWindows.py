@@ -13,7 +13,7 @@ gt_events_dir = 'data/lensless_videos_dataset/gt_events'
 #Timewindow properties
 timewindow_ms = 30
 max_time_ms = 3000 - timewindow_ms
-min_events = 5000
+min_events = 3000
 
 #Load all txt files in directories
 _, _, gt_txt_files = next(os.walk(gt_txt_dir))
