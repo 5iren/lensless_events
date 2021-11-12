@@ -37,8 +37,8 @@ def train(epochs, test_epochs, learning_rate, dataset_dir):
     #Create dataloaders
     trainloader = DataLoader(train_data, batch_size=1, shuffle=True)
     testloader = DataLoader(test_data, batch_size=1, shuffle=True)
-    print("\tTrain ataset length: ", len(trainloader))
-    print("\tTest ataset length: ", len(testloader))
+    print("       Train dataset length: ", len(trainloader))
+    print("       Test dataset length: ", len(testloader))
 
     #Load Model
     print("[INFO] Loading model...")
@@ -168,7 +168,7 @@ def train(epochs, test_epochs, learning_rate, dataset_dir):
     ax1.set_title("Train loss")
     ax1.set_xlabel("Epoch")
     ax1.set_ylabel("Loss")
-    ax1.set_ylim(top = .12 , bottom=0)
+    ax1.set_ylim(top = 1.1*max(train_loss.max(), test_loss.max()) , bottom = 1.1*min(train_loss.min(), test_loss.min()))
     fig1.savefig('plots/losses.png')
 
 
