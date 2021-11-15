@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from src.nn_utils import lenslessEventsVoxel, lenslessEvents
 
 
-def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size):
+def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins):
 
     #Set paths
     train_lensless_path = dataset_dir + 'train/lensless_events'
@@ -31,8 +31,8 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size):
 
     #Create datasets
     print("[INFO] Loading dataset and dataloader...")
-    train_data = lenslessEventsVoxel(train_lensless_path, train_gt_path, transform = transform)
-    test_data = lenslessEventsVoxel(test_lensless_path, test_gt_path, transform = transform)
+    train_data = lenslessEventsVoxel(train_lensless_path, train_gt_path, num_bins, transform = transform)
+    test_data = lenslessEventsVoxel(test_lensless_path, test_gt_path, num_bins, transform = transform)
 
     #Create dataloaders
     trainloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
@@ -42,9 +42,9 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size):
 
     #Load Model
     print("[INFO] Loading model...")
-    net = UNet(3,3)
+    net = UNet(num_bins,num_bins)
     net.to(device)
-    summary(net, ( 3, 260, 348)) #prints summary
+    summary(net, (num_bins, 260, 348)) #prints summary
 
     #Loss function and optimizer
     criterion = torch.nn.MSELoss()
@@ -102,10 +102,18 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size):
             gt = np.transpose(gt[0].cpu().detach().numpy(), (1,2,0))
             output = np.transpose(output[0].cpu().detach().numpy(), (1,2,0))
 
+            lensless = lensless[:,:,1:4]
+            gt = gt[:,:,1:4]
+            output = output[:,:,1:4]
+
             #Get test example from CUDA to display
             test_lensless = np.transpose(test_lensless[0].cpu().detach().numpy(), (1,2,0))
             test_gt = np.transpose(test_gt[0].cpu().detach().numpy(), (1,2,0))
             test_output = np.transpose(test_output[0].cpu().detach().numpy(), (1,2,0))
+
+            test_lensless = test_lensless[:,:,1:4]
+            test_gt = test_gt[:,:,1:4]
+            test_output = test_output[:,:,1:4]
 
             # lensless = lensless[0][0].cpu().detach().numpy()
             # gt = gt[0][0].cpu().detach().numpy()
@@ -163,7 +171,7 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size):
     ax1.plot(train_loss, color = 'blue', label="Train")
     ax1.plot(test_loss, color = 'red', label="Test")
     ax1.legend()
-    ax1.set_title("Train loss")
+    ax1.set_title("Losses")
     ax1.set_xlabel("Epoch")
     ax1.set_ylabel("Loss")
     ax1.set_ylim(top = 1.1*max(max(train_loss), max(test_loss)) , bottom = 0.9*min(min(train_loss), min(test_loss)))
@@ -177,6 +185,7 @@ if __name__ == "__main__":
     parser.add_argument("-te", "--test_epochs",     help="epochs to produce result",    type=int,   default=5)
     parser.add_argument("-lr", "--learning_rate",   help="for adam optimizer",          type=int,   default=.001)
     parser.add_argument("-b",  "--batch_size",      help="batch size for training",     type=int,   default=1)
+    parser.add_argument("-c",  "--num_bins",        help="number of bins or channels",  type=int,   default=1)
 
     #Get arguments
     args = parser.parse_args()

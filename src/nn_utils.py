@@ -25,7 +25,7 @@ class UnNormalize(object):
 
 #Create dataset class
 class lenslessEventsVoxel(Dataset):
-    def __init__(self, lensless_events_dir, gt_events_dir, num_bins = 3, transform = None):
+    def __init__(self, lensless_events_dir, gt_events_dir, num_bins = 5, transform = None):
         self.lensless_events_dir = lensless_events_dir
         self.gt_events_dir = gt_events_dir
         self.num_bins = num_bins
