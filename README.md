@@ -19,11 +19,19 @@ Pandas:
 
     conda install pandas
 
+pysummary:
+
+    pip install pysummary
+
 ## Scripts:
 
 `simPSF.py` simulates grayscale video captured with lensless camera and a diffraction layer (PSF convolution) 
 
 `createTimeWindows.py` creates numpy array files per event window from an event .txt file 
+
+`train.py` trains model defined in `model/` and saves trained model in `model/${epoch}_state_dict.pth`
+
+`test.py` performs inference from model and state dictionary
 
 
 
