@@ -33,5 +33,4 @@ pysummary:
 
 `test.py` performs inference from model and state dictionary
 
-
-
+`reconstruct.py` performs reconstruction from infered voxels using [rpg_e2vid](https://github.com/uzh-rpg/rpg_e2vid) functions
