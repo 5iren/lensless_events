@@ -102,22 +102,19 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins)
             gt = np.transpose(gt[0].cpu().detach().numpy(), (1,2,0))
             output = np.transpose(output[0].cpu().detach().numpy(), (1,2,0))
 
-            lensless = lensless[:,:,1:4]
-            gt = gt[:,:,1:4]
-            output = output[:,:,1:4]
-
             #Get test example from CUDA to display
             test_lensless = np.transpose(test_lensless[0].cpu().detach().numpy(), (1,2,0))
             test_gt = np.transpose(test_gt[0].cpu().detach().numpy(), (1,2,0))
             test_output = np.transpose(test_output[0].cpu().detach().numpy(), (1,2,0))
 
+            #Limit channels to display
+            lensless = lensless[:,:,1:4]
+            gt = gt[:,:,1:4]
+            output = output[:,:,1:4]
+
             test_lensless = test_lensless[:,:,1:4]
             test_gt = test_gt[:,:,1:4]
             test_output = test_output[:,:,1:4]
-
-            # lensless = lensless[0][0].cpu().detach().numpy()
-            # gt = gt[0][0].cpu().detach().numpy()
-            # output = output[0][0].cpu().detach().numpy()
 
             #Normalize before displaying
             lensless = ( lensless - lensless.min() ) / ( lensless.max() - lensless.min() )
