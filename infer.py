@@ -9,6 +9,7 @@ from src.nn_utils import lenslessEventsVoxel, lenslessEvents
 import matplotlib.pyplot as plt
 from PIL import Image
 import cv2
+from tqdm import tqdm
 
 
 #Set paths
@@ -56,14 +57,14 @@ test_running_loss = 0
 result_num = 0
 with torch.no_grad():
 
-    for data in testloader:
+    for data in tqdm(testloader):
         result_num +=1
         lensless, gt = data
         output = net(lensless)
 
         #Save tensor
-        torch.save(gt, "reconstruction/gt1.pt")
-        torch.save(output, "reconstruction/output1.pt")
+        torch.save(gt, "reconstruction/voxels/gt_"+str(result_num).zfill(3)+".pt")
+        torch.save(output, "reconstruction/voxels/output_"+str(result_num).zfill(3)+".pt")
 
         #Transpose to display
         lensless = np.transpose(lensless[0], (1,2,0))
@@ -80,27 +81,22 @@ with torch.no_grad():
         gt_new = ( gt - gt.min() ) / ( gt.max() - gt.min() )
         output_new = ( output - output.min() ) / ( output.max() - output.min() )
 
+        # #Show in Plot
+        # fig, ax = plt.subplots(1,3, figsize=(12,4))
+        # fig.tight_layout()
+        # ax[0].imshow(lensless_new)
+        # ax[0].set_title("Lensless")
+        # ax[1].imshow(gt_new)
+        # ax[1].set_title("Ground Truth")
+        # ax[2].imshow(output_new)
+        # ax[2].set_title("Output")
+        # ax[0].set_xticks([])
+        # ax[0].set_yticks([])
+        # ax[1].set_xticks([])
+        # ax[1].set_yticks([])
+        # ax[2].set_xticks([])
+        # ax[2].set_yticks([])
 
+        # plt.show()
 
-        #Show in Plot
-        fig, ax = plt.subplots(1,3, figsize=(12,4))
-        fig.tight_layout()
-        ax[0].imshow(lensless_new)
-        ax[0].set_title("Lensless")
-        ax[1].imshow(gt_new)
-        ax[1].set_title("Ground Truth")
-        ax[2].imshow(output_new)
-        ax[2].set_title("Output")
-        ax[0].set_xticks([])
-        ax[0].set_yticks([])
-        ax[1].set_xticks([])
-        ax[1].set_yticks([])
-        ax[2].set_xticks([])
-        ax[2].set_yticks([])
-
-        plt.show()
-
-        
-
-        #break
 
