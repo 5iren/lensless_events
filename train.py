@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from src.nn_utils import lenslessEventsVoxel, lenslessEvents
 
 
-def train(epochs, test_epochs, learning_rate, dataset_dir):
+def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size):
 
     #Set paths
     train_lensless_path = dataset_dir + 'train/lensless_events'
@@ -35,8 +35,8 @@ def train(epochs, test_epochs, learning_rate, dataset_dir):
     test_data = lenslessEventsVoxel(test_lensless_path, test_gt_path, transform = transform)
 
     #Create dataloaders
-    trainloader = DataLoader(train_data, batch_size=1, shuffle=True)
-    testloader = DataLoader(test_data, batch_size=1, shuffle=True)
+    trainloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    testloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
     print("       Train dataset length: ", len(trainloader))
     print("       Test dataset length: ", len(testloader))
 
@@ -72,7 +72,7 @@ def train(epochs, test_epochs, learning_rate, dataset_dir):
             loss = criterion(output, gt)
             loss.backward()
             optimizer.step()
-            train_running_loss += loss.item()
+            train_running_loss += float(loss.item())
 
         #Test
         with torch.no_grad():
@@ -83,7 +83,7 @@ def train(epochs, test_epochs, learning_rate, dataset_dir):
                 #Forward 
                 test_output = net(test_lensless)
                 loss = criterion(test_output,  test_gt)
-                test_running_loss += loss.item()
+                test_running_loss += float(loss.item())
 
 
         #Print Statistics
@@ -154,9 +154,7 @@ def train(epochs, test_epochs, learning_rate, dataset_dir):
             ax0[2].set_xticks([])
             ax0[2].set_yticks([])
             fig0.savefig('results/test/'+str(epoch).zfill(3) + '_comparisons.png')
-
-                                                            
-
+                                                  
     #Save trained model
     torch.save(net.state_dict(), 'model/'+str(epochs)+'_state_dict.pth')
 
@@ -168,10 +166,8 @@ def train(epochs, test_epochs, learning_rate, dataset_dir):
     ax1.set_title("Train loss")
     ax1.set_xlabel("Epoch")
     ax1.set_ylabel("Loss")
-    ax1.set_ylim(top = 1.1*max(train_loss.max(), test_loss.max()) , bottom = 1.1*min(train_loss.min(), test_loss.min()))
-    fig1.savefig('plots/losses.png')
-
-
+    ax1.set_ylim(top = 1.1*max(max(train_loss), max(test_loss)) , bottom = 0.9*min(min(train_loss), min(test_loss)))
+    fig1.savefig('results/plots/losses.png')
 
 
 if __name__ == "__main__":
@@ -180,7 +176,7 @@ if __name__ == "__main__":
     parser.add_argument("-e",  "--epochs",          help="total number of epochs",      type=int,   default=300)
     parser.add_argument("-te", "--test_epochs",     help="epochs to produce result",    type=int,   default=5)
     parser.add_argument("-lr", "--learning_rate",   help="for adam optimizer",          type=int,   default=.001)
-    
+    parser.add_argument("-b",  "--batch_size",      help="batch size for training",     type=int,   default=1)
 
     #Get arguments
     args = parser.parse_args()
@@ -188,6 +184,7 @@ if __name__ == "__main__":
     epochs = args.epochs
     test_epochs = args.test_epochs
     learning_rate = args.learning_rate
+    batch_size = args.batch_size
 
     #Print info in console
     print("-------Training Parameters--------")
@@ -195,9 +192,10 @@ if __name__ == "__main__":
     print("Epochs:                  ", epochs)
     print("Test epochs:             ", test_epochs)
     print("Learning rate:           ", learning_rate)
+    print("Batch size:              ", batch_size)
     print("----------------------------------")
 
     #Train 
-    train(epochs, test_epochs, learning_rate, dataset_dir)
+    train(epochs, test_epochs, learning_rate, dataset_dir, batch_size)
 
     print("Done!")
