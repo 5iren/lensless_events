@@ -182,7 +182,7 @@ if __name__ == "__main__":
     parser.add_argument("-te", "--test_epochs",     help="epochs to produce result",    type=int,   default=5)
     parser.add_argument("-lr", "--learning_rate",   help="for adam optimizer",          type=int,   default=.001)
     parser.add_argument("-b",  "--batch_size",      help="batch size for training",     type=int,   default=1)
-    parser.add_argument("-c",  "--num_bins",        help="number of bins or channels",  type=int,   default=1)
+    parser.add_argument("-c",  "--num_bins",        help="number of bins or channels",  type=int,   default=5)
 
     #Get arguments
     args = parser.parse_args()
@@ -191,6 +191,7 @@ if __name__ == "__main__":
     test_epochs = args.test_epochs
     learning_rate = args.learning_rate
     batch_size = args.batch_size
+    num_bins = args.num_bins
 
     #Print info in console
     print("-------Training Parameters--------")
@@ -202,6 +203,6 @@ if __name__ == "__main__":
     print("----------------------------------")
 
     #Train 
-    train(epochs, test_epochs, learning_rate, dataset_dir, batch_size)
+    train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins)
 
     print("Done!")

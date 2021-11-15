@@ -13,9 +13,9 @@ import cv2
 
 #Set paths
 dataset_dir = 'data/lensless_videos_dataset/'
-test_lensless_path = dataset_dir + 'test/lensless_events'
-test_gt_path = dataset_dir + 'test/gt_events'
-model_path = 'model/state_dict.pth'
+test_lensless_path = dataset_dir + 'train/lensless_events'
+test_gt_path = dataset_dir + 'train/gt_events'
+model_path = 'model/300_state_dict.pth'
 save_path = 'results/inference_results/'
 
 #Load CUDA
@@ -37,10 +37,10 @@ print("[INFO] Loading dataset and dataloader...")
 test_data = lenslessEventsVoxel(test_lensless_path, test_gt_path, transform = transform)
 
 #Create dataloaders
-testloader = DataLoader(test_data, batch_size=1, shuffle=True)
+testloader = DataLoader(test_data, batch_size=1, shuffle=False)
 
 #Load trained Model
-net = UNet(3,3)
+net = UNet(5,5)
 net.load_state_dict(torch.load(model_path))
 net.eval()
 
@@ -61,11 +61,21 @@ with torch.no_grad():
         lensless, gt = data
         output = net(lensless)
 
+        #Save tensor
+        torch.save(gt, "reconstruction/gt1.pt")
+        torch.save(output, "reconstruction/output1.pt")
+
         #Transpose to display
         lensless = np.transpose(lensless[0], (1,2,0))
         gt = np.transpose(gt[0], (1,2,0))
         output = np.transpose(output[0], (1,2,0))
 
+        #Limit to 3 channels to display
+        lensless = lensless[:,:,1:4]
+        gt = gt[:,:,1:4]
+        output = output[:,:,1:4]
+
+        #Normalize 
         lensless_new = ( lensless - lensless.min() ) / ( lensless.max() - lensless.min() )
         gt_new = ( gt - gt.min() ) / ( gt.max() - gt.min() )
         output_new = ( output - output.min() ) / ( output.max() - output.min() )
@@ -90,5 +100,7 @@ with torch.no_grad():
 
         plt.show()
 
+        
 
+        #break
 
