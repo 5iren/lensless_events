@@ -1,3 +1,7 @@
+#Takes standard video (-i) and convolves with PSF to generate lensless video.
+#Both lensless and standard video are returned with same width (-wt) and height (-ht)
+
+
 import cv2
 import argparse
 import numpy as np
@@ -7,8 +11,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--video_name",   help="name of the video",           required=True)
     parser.add_argument("-r", "--frame_rate",   help="framerate of lensless video", default=30,     type=int)
-    parser.add_argument("-wt", "--width",        help="width of sensor",             default=346,    type=int)
-    parser.add_argument("-ht", "--height",       help="height of sensor",            default=260,    type=int)
+    parser.add_argument("-wt", "--width",       help="width of sensor",             default=346,    type=int)
+    parser.add_argument("-ht", "--height",      help="height of sensor",            default=260,    type=int)
 
     #Get arguments
     args = parser.parse_args()
@@ -25,7 +29,7 @@ if __name__ == "__main__":
     cropped_dir = "data/videos_dataset/cropped_videos/"
     video_path = video_dir + video_name
     single_name = video_name.split('.')
-    result_name = results_dir + single_name[0] + '.avi'
+    result_name = results_dir + "lensless_" + single_name[0] + '.avi'
     cropped_name = cropped_dir + single_name[0] + '.avi'
     psf_path = 'data/videos_dataset/psf/psf_16bit_baffle.tif'
     #psf_path = 'data/videos_dataset/psf/pinholePSF.png'
