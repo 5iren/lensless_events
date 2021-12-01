@@ -1,23 +1,18 @@
-import os
 import torch
-from torchvision import transforms
-import torchvision.transforms.functional as F
 import numpy as np
 from model.unet import UNet
 from torch.utils.data import DataLoader
 from src.nn_utils import lenslessEventsVoxel, lenslessEvents
 import matplotlib.pyplot as plt
-from PIL import Image
-import cv2
 from tqdm import tqdm
 
 
 #Set paths
 dataset_dir = 'data/lensless_videos_dataset/'
-test_lensless_path = dataset_dir + 'train/lensless_events'
-test_gt_path = dataset_dir + 'train/gt_events'
-model_path = 'model/300_state_dict.pth'
-save_path = 'results/inference_results/'
+test_lensless_path = dataset_dir + 'test/lensless_events'
+test_gt_path = dataset_dir + 'test/gt_events'
+model_path = 'model/500_state_dict.pth'
+save_path = 'results/inference/'
 
 #Load CUDA
 #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -63,8 +58,8 @@ with torch.no_grad():
         output = net(lensless)
 
         #Save tensor
-        torch.save(gt, "reconstruction/voxels/gt_"+str(result_num).zfill(3)+".pt")
-        torch.save(output, "reconstruction/voxels/output_"+str(result_num).zfill(3)+".pt")
+        torch.save(gt, "reconstruction/voxels/airplane2/gt/"+str(result_num).zfill(3)+".pt")
+        torch.save(output, "reconstruction/voxels/airplane2/rec/"+str(result_num).zfill(3)+".pt")
 
         #Transpose to display
         lensless = np.transpose(lensless[0], (1,2,0))
@@ -85,7 +80,7 @@ with torch.no_grad():
         # fig, ax = plt.subplots(1,3, figsize=(12,4))
         # fig.tight_layout()
         # ax[0].imshow(lensless_new)
-        # ax[0].set_title("Lensless")
+        # ax[0].set_title("Lensless_"+str(result_num))
         # ax[1].imshow(gt_new)
         # ax[1].set_title("Ground Truth")
         # ax[2].imshow(output_new)
@@ -96,7 +91,6 @@ with torch.no_grad():
         # ax[1].set_yticks([])
         # ax[2].set_xticks([])
         # ax[2].set_yticks([])
-
         # plt.show()
 
 
