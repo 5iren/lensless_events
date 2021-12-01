@@ -37,8 +37,8 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins)
     #Create dataloaders
     trainloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
     testloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
-    print("       Train dataset length: ", len(trainloader))
-    print("       Test dataset length: ", len(testloader))
+    print("       Train dataset length: ", len(train_data))
+    print("       Test dataset length: ", len(test_data))
 
     #Load Model
     print("[INFO] Loading model...")
@@ -181,7 +181,7 @@ if __name__ == "__main__":
     parser.add_argument("-e",  "--epochs",          help="total number of epochs",      type=int,   default=300)
     parser.add_argument("-te", "--test_epochs",     help="epochs to produce result",    type=int,   default=5)
     parser.add_argument("-lr", "--learning_rate",   help="for adam optimizer",          type=int,   default=.001)
-    parser.add_argument("-b",  "--batch_size",      help="batch size for training",     type=int,   default=1)
+    parser.add_argument("-b",  "--batch_size",      help="batch size for training",     type=int,   default=4)
     parser.add_argument("-c",  "--num_bins",        help="number of bins or channels",  type=int,   default=5)
 
     #Get arguments
