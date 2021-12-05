@@ -1,6 +1,7 @@
 #import os
 import argparse
 import torch
+from torch.nn.modules import conv
 from torchvision import transforms
 from torchsummary import summary
 import numpy as np
@@ -10,7 +11,7 @@ import matplotlib.pyplot as plt
 from src.nn_utils import lenslessEventsVoxel, lenslessEvents
 
 
-def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins):
+def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins, conv_transpose):
 
     #Set paths
     train_lensless_path = dataset_dir + 'train/lensless_events'
@@ -42,7 +43,7 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins)
 
     #Load Model
     print("[INFO] Loading model...")
-    net = UNet(num_bins,num_bins)
+    net = UNet(num_bins,num_bins, bilinear= (not conv_transpose)) #Bilinear True for upsample, False for ConvTranspose2D
     net.to(device)
     summary(net, (num_bins, 260, 348)) #prints summary
 
@@ -97,71 +98,71 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins)
                                                 )
 
         if epoch % test_epochs == 0:
-            #Get train example from CUDA to display
-            lensless = np.transpose(lensless[0].cpu().detach().numpy(), (1,2,0))
-            gt = np.transpose(gt[0].cpu().detach().numpy(), (1,2,0))
-            output = np.transpose(output[0].cpu().detach().numpy(), (1,2,0))
+            # #Get train example from CUDA to display
+            # lensless = np.transpose(lensless[0].cpu().detach().numpy(), (1,2,0))
+            # gt = np.transpose(gt[0].cpu().detach().numpy(), (1,2,0))
+            # output = np.transpose(output[0].cpu().detach().numpy(), (1,2,0))
 
-            #Get test example from CUDA to display
-            test_lensless = np.transpose(test_lensless[0].cpu().detach().numpy(), (1,2,0))
-            test_gt = np.transpose(test_gt[0].cpu().detach().numpy(), (1,2,0))
-            test_output = np.transpose(test_output[0].cpu().detach().numpy(), (1,2,0))
+            # #Get test example from CUDA to display
+            # test_lensless = np.transpose(test_lensless[0].cpu().detach().numpy(), (1,2,0))
+            # test_gt = np.transpose(test_gt[0].cpu().detach().numpy(), (1,2,0))
+            # test_output = np.transpose(test_output[0].cpu().detach().numpy(), (1,2,0))
 
-            #Limit channels to display
-            lensless = lensless[:,:,1:4]
-            gt = gt[:,:,1:4]
-            output = output[:,:,1:4]
+            # #Limit channels to display
+            # lensless = lensless[:,:,1:4]
+            # gt = gt[:,:,1:4]
+            # output = output[:,:,1:4]
 
-            test_lensless = test_lensless[:,:,1:4]
-            test_gt = test_gt[:,:,1:4]
-            test_output = test_output[:,:,1:4]
+            # test_lensless = test_lensless[:,:,1:4]
+            # test_gt = test_gt[:,:,1:4]
+            # test_output = test_output[:,:,1:4]
 
-            #Normalize before displaying
-            lensless = ( lensless - lensless.min() ) / ( lensless.max() - lensless.min() )
-            gt = ( gt - gt.min() ) / ( gt.max() - gt.min() )
-            output = ( output - output.min() ) / ( output.max() - output.min() )
+            # #Normalize before displaying
+            # lensless = ( lensless - lensless.min() ) / ( lensless.max() - lensless.min() )
+            # gt = ( gt - gt.min() ) / ( gt.max() - gt.min() )
+            # output = ( output - output.min() ) / ( output.max() - output.min() )
 
-            test_lensless = ( test_lensless - test_lensless.min() ) / ( test_lensless.max() - test_lensless.min() )
-            test_gt = ( test_gt - test_gt.min() ) / ( test_gt.max() - test_gt.min() )
-            test_output = ( test_output - test_output.min() ) / ( test_output.max() - test_output.min() )
+            # test_lensless = ( test_lensless - test_lensless.min() ) / ( test_lensless.max() - test_lensless.min() )
+            # test_gt = ( test_gt - test_gt.min() ) / ( test_gt.max() - test_gt.min() )
+            # test_output = ( test_output - test_output.min() ) / ( test_output.max() - test_output.min() )
 
 
-            #Draw figure with input, groundtruth and output from training data
-            fig, ax = plt.subplots(1,3, figsize=(12,4))
-            fig.tight_layout()
-            ax[0].imshow(lensless)
-            ax[0].set_title('Lensless')
-            ax[0].set_xticks([])
-            ax[0].set_yticks([])
-            ax[1].imshow(gt)
-            ax[1].set_title('Groundtruth')
-            ax[1].set_xticks([])
-            ax[1].set_yticks([])
-            ax[2].imshow(output)
-            ax[2].set_title('Output')
-            ax[2].set_xticks([])
-            ax[2].set_yticks([])
-            fig.savefig('results/train/'+str(epoch).zfill(3) + '_comparisons.png')
+            # #Draw figure with input, groundtruth and output from training data
+            # fig, ax = plt.subplots(1,3, figsize=(12,4))
+            # fig.tight_layout()
+            # ax[0].imshow(lensless)
+            # ax[0].set_title('Lensless')
+            # ax[0].set_xticks([])
+            # ax[0].set_yticks([])
+            # ax[1].imshow(gt)
+            # ax[1].set_title('Groundtruth')
+            # ax[1].set_xticks([])
+            # ax[1].set_yticks([])
+            # ax[2].imshow(output)
+            # ax[2].set_title('Output')
+            # ax[2].set_xticks([])
+            # ax[2].set_yticks([])
+            # fig.savefig('results/train/'+str(epoch).zfill(3) + '_comparisons.png')
 
-            #Draw figure with input, groundtruth and output from test data
-            fig0, ax0 = plt.subplots(1,3, figsize=(12,4))
-            fig0.tight_layout()
-            ax0[0].imshow(test_lensless)
-            ax0[0].set_title('Lensless')
-            ax0[0].set_xticks([])
-            ax0[0].set_yticks([])
-            ax0[1].imshow(test_gt)
-            ax0[1].set_title('Groundtruth')
-            ax0[1].set_xticks([])
-            ax0[1].set_yticks([])
-            ax0[2].imshow(test_output)
-            ax0[2].set_title('Output')
-            ax0[2].set_xticks([])
-            ax0[2].set_yticks([])
-            fig0.savefig('results/test/'+str(epoch).zfill(3) + '_comparisons.png')
+            # #Draw figure with input, groundtruth and output from test data
+            # fig0, ax0 = plt.subplots(1,3, figsize=(12,4))
+            # fig0.tight_layout()
+            # ax0[0].imshow(test_lensless)
+            # ax0[0].set_title('Lensless')
+            # ax0[0].set_xticks([])
+            # ax0[0].set_yticks([])
+            # ax0[1].imshow(test_gt)
+            # ax0[1].set_title('Groundtruth')
+            # ax0[1].set_xticks([])
+            # ax0[1].set_yticks([])
+            # ax0[2].imshow(test_output)
+            # ax0[2].set_title('Output')
+            # ax0[2].set_xticks([])
+            # ax0[2].set_yticks([])
+            # fig0.savefig('results/test/'+str(epoch).zfill(3) + '_comparisons.png')
                                                   
-    #Save trained model
-    torch.save(net.state_dict(), 'model/'+str(epochs)+'_state_dict.pth')
+            #Save trained model
+            torch.save(net.state_dict(), 'model/relu_up'+str(not conv_transpose)+'_e'+str(epoch)+'_lr'+str(learning_rate)+'_state_dict.pth')
 
     #Save Loss graphic
     fig1, ax1 = plt.subplots()
@@ -172,7 +173,9 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins)
     ax1.set_xlabel("Epoch")
     ax1.set_ylabel("Loss")
     ax1.set_ylim(top = 1.1*max(max(train_loss), max(test_loss)) , bottom = 0.9*min(min(train_loss), min(test_loss)))
-    fig1.savefig('results/plots/losses.png')
+    fig1.savefig('results/plots/relu_up'+str(not conv_transpose)+'_e'+str(epochs)+'_lr'+str(learning_rate)+'_losses.png')
+    np.save('results/plots/relu_up'+str(not conv_transpose)+'_e'+str(epochs)+'_lr'+str(learning_rate)+'_train', train_loss)
+    np.save('results/plots/relu_up'+str(not conv_transpose)+'_e'+str(epochs)+'_lr'+str(learning_rate)+'_test', test_loss)
 
 
 if __name__ == "__main__":
@@ -180,9 +183,10 @@ if __name__ == "__main__":
     parser.add_argument("-i",  "--dataset_dir",     help="directory",                   default="data/lensless_videos_dataset/")
     parser.add_argument("-e",  "--epochs",          help="total number of epochs",      type=int,   default=300)
     parser.add_argument("-te", "--test_epochs",     help="epochs to produce result",    type=int,   default=5)
-    parser.add_argument("-lr", "--learning_rate",   help="for adam optimizer",          type=int,   default=.001)
+    parser.add_argument("-lr", "--learning_rate",   help="for adam optimizer",          type=float, default=.001)
     parser.add_argument("-b",  "--batch_size",      help="batch size for training",     type=int,   default=4)
     parser.add_argument("-c",  "--num_bins",        help="number of bins or channels",  type=int,   default=5)
+    parser.add_argument("--conv_transpose",         help="use conv_transpose",          action='store_true')
 
     #Get arguments
     args = parser.parse_args()
@@ -192,6 +196,7 @@ if __name__ == "__main__":
     learning_rate = args.learning_rate
     batch_size = args.batch_size
     num_bins = args.num_bins
+    conv_transpose = args.conv_transpose
 
     #Print info in console
     print("-------Training Parameters--------")
@@ -200,9 +205,10 @@ if __name__ == "__main__":
     print("Test epochs:             ", test_epochs)
     print("Learning rate:           ", learning_rate)
     print("Batch size:              ", batch_size)
+    print("Using conv trasnpose:    ", conv_transpose)
     print("----------------------------------")
 
     #Train 
-    train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins)
+    train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins, conv_transpose)
 
     print("Done!")

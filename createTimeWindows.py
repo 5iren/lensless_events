@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import pandas as pd
+from tqdm import tqdm
 #TODO: Handle non-zero on both timewindows 
 
 
@@ -19,6 +20,10 @@ min_events = 3000
 _, _, gt_txt_files = next(os.walk(gt_txt_dir))
 _, _, lensless_txt_files = next(os.walk(lensless_txt_dir))
 
+gt_txt_files.sort()
+lensless_txt_files.sort()
+
+
 #Check if files sizes are the same
 assert len(gt_txt_files) == len(lensless_txt_files) ,  "Quantity of files is not the same"
 
@@ -29,7 +34,7 @@ def make_filename(idx, video_name):
 #For storing valid indices (non-zero)
 
 #Loop through txt files
-for i in range(len(gt_txt_files)):
+for i in tqdm(range(len(gt_txt_files))):
     idx = 1
     #Get name
     gt_video_name = gt_txt_files[i].split('.')[0]
