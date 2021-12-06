@@ -6,9 +6,11 @@ from torchvision import transforms
 from torchsummary import summary
 import numpy as np
 from model.unet import UNet
+#from model.unet2 import UNet
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 from src.nn_utils import lenslessEventsVoxel, lenslessEvents
+import time
 
 
 def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins, conv_transpose):
@@ -45,7 +47,7 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins,
     print("[INFO] Loading model...")
     net = UNet(num_bins,num_bins, bilinear= (not conv_transpose)) #Bilinear True for upsample, False for ConvTranspose2D
     net.to(device)
-    summary(net, (num_bins, 260, 348)) #prints summary
+    #summary(net, (num_bins, 260, 348)) #prints summary
 
     #Loss function and optimizer
     criterion = torch.nn.MSELoss()
@@ -56,6 +58,7 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins,
     train_loss = []
     test_loss = []
 
+    tic = time.perf_counter()
     for epoch in range(1,epochs+1):
         train_running_loss = 0
         test_running_loss = 0
@@ -73,6 +76,7 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins,
             loss = criterion(output, gt)
             loss.backward()
             optimizer.step()
+            train_loss.append(float(loss.item()))
             train_running_loss += float(loss.item())
 
         #Test
@@ -84,20 +88,19 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins,
                 #Forward 
                 test_output = net(test_lensless)
                 loss = criterion(test_output,  test_gt)
+                train_loss.append(float(loss.item()))
                 test_running_loss += float(loss.item())
 
 
         #Print Statistics
-        train_loss.append(train_running_loss / len(trainloader))
-        test_loss.append(test_running_loss / len(testloader))
-
-
+        #train_loss.append(train_running_loss / len(trainloader))
+        #test_loss.append(test_running_loss / len(testloader))
         print("[%3d / %3d] Train loss: %.6f | Test loss: %.6f " % (epoch, epochs, 
                                                 train_running_loss / len(trainloader),
                                                 test_running_loss / len(testloader))
                                                 )
 
-        if epoch % test_epochs == 0:
+        #if epoch % test_epochs == 0:
             # #Get train example from CUDA to display
             # lensless = np.transpose(lensless[0].cpu().detach().numpy(), (1,2,0))
             # gt = np.transpose(gt[0].cpu().detach().numpy(), (1,2,0))
@@ -161,8 +164,8 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins,
             # ax0[2].set_yticks([])
             # fig0.savefig('results/test/'+str(epoch).zfill(3) + '_comparisons.png')
                                                   
-            #Save trained model
-            torch.save(net.state_dict(), 'model/relu_up'+str(not conv_transpose)+'_e'+str(epoch)+'_lr'+str(learning_rate)+'_state_dict.pth')
+    #Save trained model
+    torch.save(net.state_dict(), 'model/relu_up'+str(not conv_transpose)+'_e'+str(epochs)+'_lr'+str(learning_rate)+'_state_dict.pth')
 
     #Save Loss graphic
     fig1, ax1 = plt.subplots()
@@ -183,8 +186,8 @@ if __name__ == "__main__":
     parser.add_argument("-i",  "--dataset_dir",     help="directory",                   default="data/lensless_videos_dataset/")
     parser.add_argument("-e",  "--epochs",          help="total number of epochs",      type=int,   default=300)
     parser.add_argument("-te", "--test_epochs",     help="epochs to produce result",    type=int,   default=5)
-    parser.add_argument("-lr", "--learning_rate",   help="for adam optimizer",          type=float, default=.001)
-    parser.add_argument("-b",  "--batch_size",      help="batch size for training",     type=int,   default=4)
+    parser.add_argument("-lr", "--learning_rate",   help="for adam optimizer",          type=float, default=.0001)
+    parser.add_argument("-b",  "--batch_size",      help="batch size for training",     type=int,   default=32)
     parser.add_argument("-c",  "--num_bins",        help="number of bins or channels",  type=int,   default=5)
     parser.add_argument("--conv_transpose",         help="use conv_transpose",          action='store_true')
 
@@ -205,7 +208,7 @@ if __name__ == "__main__":
     print("Test epochs:             ", test_epochs)
     print("Learning rate:           ", learning_rate)
     print("Batch size:              ", batch_size)
-    print("Using conv trasnpose:    ", conv_transpose)
+    print("Using conv transpose:    ", conv_transpose)
     print("----------------------------------")
 
     #Train 
