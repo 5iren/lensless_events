@@ -13,13 +13,16 @@ from src.nn_utils import lenslessEventsVoxel, lenslessEvents
 import time
 
 
-def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins, conv_transpose):
+def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins, loss_fn, optim, conv_transpose):
 
     #Set paths
     train_lensless_path = dataset_dir + 'train/lensless_events'
     train_gt_path = dataset_dir + 'train/gt_events'
     test_lensless_path = dataset_dir + 'test/lensless_events'
     test_gt_path = dataset_dir + 'test/gt_events'
+
+    #File name
+    fileName = 'e('+str(epochs)+')-l('+str(loss_fn)+')-o('+str(optim)+')-lr('+str(learning_rate)+')'
 
     #Load CUDA
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -41,29 +44,43 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins,
     trainloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
     testloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
     print("       Train dataset length: ", len(train_data))
-    print("       Test dataset length: ", len(test_data))
+    print("       Test dataset length:  ", len(test_data))
+    print("       Train minibatches:    ", len(trainloader))
+    print("       Test  minibatches:    ", len(testloader))
 
     #Load Model
     print("[INFO] Loading model...")
     net = UNet(num_bins,num_bins, bilinear= (not conv_transpose)) #Bilinear True for upsample, False for ConvTranspose2D
     net.to(device)
-    #summary(net, (num_bins, 260, 348)) #prints summary
+    summary(net, (num_bins, 260, 348)) #prints summary
 
     #Loss function and optimizer
-    criterion = torch.nn.MSELoss()
-    optimizer = torch.optim.Adam(net.parameters(), lr = learning_rate)
+    if loss_fn == 'MSE':
+        criterion = torch.nn.MSELoss()
+    elif loss_fn == 'L1':
+        criterion = torch.nn.L1Loss()
+    else:
+        print("Loss Function not recognized (MSE, L1)")
+
+    if optim == 'Adam':
+        optimizer = torch.optim.Adam(net.parameters(), lr = learning_rate)
+    elif optim == 'AdamW':
+        optimizer = torch.optim.AdamW(net.parameters(), lr = learning_rate)
+    else:
+        print("Optimizer not recognized (Adam, AdamW)")
+
 
     #Train loop
     print("[INFO] Training...")
     train_loss = []
     test_loss = []
 
-    tic = time.perf_counter()
     for epoch in range(1,epochs+1):
         train_running_loss = 0
         test_running_loss = 0
 
         #Train
+        net.train()
         for data in trainloader:
             #Get image and ground truth
             lensless, gt = data[0].to(device), data[1].to(device)
@@ -80,6 +97,7 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins,
             train_running_loss += float(loss.item())
 
         #Test
+        net.eval()
         with torch.no_grad():
             for data in testloader:
                 #Get image and ground truth
@@ -88,7 +106,7 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins,
                 #Forward 
                 test_output = net(test_lensless)
                 loss = criterion(test_output,  test_gt)
-                train_loss.append(float(loss.item()))
+                test_loss.append(float(loss.item()))
                 test_running_loss += float(loss.item())
 
 
@@ -165,20 +183,20 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins,
             # fig0.savefig('results/test/'+str(epoch).zfill(3) + '_comparisons.png')
                                                   
     #Save trained model
-    torch.save(net.state_dict(), 'model/relu_up'+str(not conv_transpose)+'_e'+str(epochs)+'_lr'+str(learning_rate)+'_state_dict.pth')
+    torch.save(net.state_dict(), 'model/'+fileName+'.pth')
 
     #Save Loss graphic
-    fig1, ax1 = plt.subplots()
-    ax1.plot(train_loss, color = 'blue', label="Train")
-    ax1.plot(test_loss, color = 'red', label="Test")
-    ax1.legend()
-    ax1.set_title("Losses")
-    ax1.set_xlabel("Epoch")
-    ax1.set_ylabel("Loss")
-    ax1.set_ylim(top = 1.1*max(max(train_loss), max(test_loss)) , bottom = 0.9*min(min(train_loss), min(test_loss)))
-    fig1.savefig('results/plots/relu_up'+str(not conv_transpose)+'_e'+str(epochs)+'_lr'+str(learning_rate)+'_losses.png')
-    np.save('results/plots/relu_up'+str(not conv_transpose)+'_e'+str(epochs)+'_lr'+str(learning_rate)+'_train', train_loss)
-    np.save('results/plots/relu_up'+str(not conv_transpose)+'_e'+str(epochs)+'_lr'+str(learning_rate)+'_test', test_loss)
+    # fig1, ax1 = plt.subplots()
+    # ax1.plot(train_loss, color = 'blue', label="Train")
+    # ax1.plot(test_loss, color = 'red', label="Test")
+    # ax1.legend()
+    # ax1.set_title("Losses")
+    # ax1.set_xlabel("Epoch")
+    # ax1.set_ylabel("Loss")
+    # ax1.set_ylim(top = 1.1*max(max(train_loss), max(test_loss)) , bottom = 0.9*min(min(train_loss), min(test_loss)))
+    # fig1.savefig('results/plots/relu_up'+str(not conv_transpose)+'_e'+str(epochs)+'_lr'+str(learning_rate)+'_losses.png')
+    np.save('results/plots/iterations/'+fileName+'_train', train_loss)
+    np.save('results/plots/iterations/'+fileName+'_test', test_loss)
 
 
 if __name__ == "__main__":
@@ -186,9 +204,11 @@ if __name__ == "__main__":
     parser.add_argument("-i",  "--dataset_dir",     help="directory",                   default="data/lensless_videos_dataset/")
     parser.add_argument("-e",  "--epochs",          help="total number of epochs",      type=int,   default=300)
     parser.add_argument("-te", "--test_epochs",     help="epochs to produce result",    type=int,   default=5)
-    parser.add_argument("-lr", "--learning_rate",   help="for adam optimizer",          type=float, default=.0001)
+    parser.add_argument("-lr", "--learning_rate",   help="for adam optimizer",          type=float, default=1e-5)
     parser.add_argument("-b",  "--batch_size",      help="batch size for training",     type=int,   default=32)
     parser.add_argument("-c",  "--num_bins",        help="number of bins or channels",  type=int,   default=5)
+    parser.add_argument("-l",  "--loss_fn",         help="Loss function",               type=str,   default='MSE')
+    parser.add_argument("-o",  "--optim",           help="Optimizer",                   type=str,   default='Adam')
     parser.add_argument("--conv_transpose",         help="use conv_transpose",          action='store_true')
 
     #Get arguments
@@ -200,18 +220,22 @@ if __name__ == "__main__":
     batch_size = args.batch_size
     num_bins = args.num_bins
     conv_transpose = args.conv_transpose
+    loss_fn = args.loss_fn
+    optim = args.optim
 
     #Print info in console
     print("-------Training Parameters--------")
     print("----------------------------------")
     print("Epochs:                  ", epochs)
     print("Test epochs:             ", test_epochs)
-    print("Learning rate:           ", learning_rate)
     print("Batch size:              ", batch_size)
+    print("Loss function:           ", loss_fn)
+    print("Optimizer:               ", optim)
+    print("Learning rate:           ", learning_rate)
     print("Using conv transpose:    ", conv_transpose)
     print("----------------------------------")
 
     #Train 
-    train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins, conv_transpose)
+    train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins, loss_fn, optim, conv_transpose)
 
     print("Done!")
