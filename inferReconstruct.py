@@ -4,17 +4,20 @@ import matplotlib.pyplot as plt
 import torch
 from torch.nn import ReflectionPad2d
 from torch.utils.data import DataLoader
-
+import cv2
 from model.unet import UNet
 from src.nn_utils import lenslessEventsVoxel
 from src.rec_utils import load_model
 
 
 #Set paths
-dataset_dir = 'data/lensless_videos_dataset/'
-test_lensless_path = dataset_dir + 'test/lensless_events'
-test_gt_path = dataset_dir + 'test/gt_events'
-model_path = 'model/500_state_dict.pth'
+folder = 'running1'
+dataset_dir = 'data/lensless_videos_dataset/' + folder
+test_lensless_path = dataset_dir + '/lensless_events'
+test_gt_path = dataset_dir + '/gt_events'
+#model_path = 'model/arch(Unet)-e(300)-l(L1)-o(Adam)-lr(1e-05).pth'
+model_path = 'model/arch(Unet)-e(300)-l(MSE)-o(Adam)-lr(1e-05).pth'
+#model_path = 'model/500_state_dict.pth'
 save_path = 'results/inference/'
 
 #Load CUDA
@@ -113,7 +116,7 @@ with torch.no_grad():
         output_new = ( output_v - output_v.min() ) / ( output_v.max() - output_v.min() )
 
         #Show in Plot
-        fig, ax = plt.subplots(1,5, figsize=(12,4))
+        fig, ax = plt.subplots(1,5, figsize=(18,3))
         fig.tight_layout()
         ax[0].imshow(lensless_new)
         ax[0].set_title("Lensless events")
@@ -125,18 +128,23 @@ with torch.no_grad():
         ax[3].set_title("Ground Truth Reconstruction")
         ax[4].imshow(output_rec, cmap = 'gray')
         ax[4].set_title("CNN Output Reconstruction")
-        ax[0].set_xticks([])
-        ax[0].set_yticks([])
-        ax[1].set_xticks([])
-        ax[1].set_yticks([])
-        ax[2].set_xticks([])
-        ax[2].set_yticks([])
-        ax[3].set_xticks([])
-        ax[3].set_yticks([])
-        ax[4].set_xticks([])
-        ax[4].set_yticks([])
-        fig.suptitle(str(result_num))
+        ax[0].axis('off')
+        ax[1].axis('off')
+        ax[2].axis('off')
+        ax[3].axis('off')
+        ax[4].axis('off')
         plt.show()
+        
+        if result_num == 10:
+            break
 
+        #Show image
+        #cv2.imshow('Reconstruction', output_rec)
+        #cv2.waitKey(1)
+
+        #Save images
+        #cv2.imwrite('results/inference/rec/img'+str(result_num).zfill(3)+'.png', output_rec*255)
+        #cv2.imwrite('results/inference/gt/img'+str(result_num).zfill(3)+'.png', gt_rec*255)
+    #cv2.destroyAllWindows()
 
 

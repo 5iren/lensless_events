@@ -22,7 +22,8 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins,
     test_gt_path = dataset_dir + 'test/gt_events'
 
     #File name
-    fileName = 'e('+str(epochs)+')-l('+str(loss_fn)+')-o('+str(optim)+')-lr('+str(learning_rate)+')'
+    arch = 'Unet'
+    fileName = 'arch('+arch+')-e('+str(epochs)+')-l('+str(loss_fn)+')-o('+str(optim)+')-lr('+str(learning_rate)+')'
 
     #Load CUDA
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -74,6 +75,8 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins,
     print("[INFO] Training...")
     train_loss = []
     test_loss = []
+    train_loss_e = []
+    test_loss_e = []
 
     for epoch in range(1,epochs+1):
         train_running_loss = 0
@@ -111,8 +114,8 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins,
 
 
         #Print Statistics
-        #train_loss.append(train_running_loss / len(trainloader))
-        #test_loss.append(test_running_loss / len(testloader))
+        train_loss_e.append(train_running_loss / len(trainloader))
+        test_loss_e.append(test_running_loss / len(testloader))
         print("[%3d / %3d] Train loss: %.6f | Test loss: %.6f " % (epoch, epochs, 
                                                 train_running_loss / len(trainloader),
                                                 test_running_loss / len(testloader))
@@ -183,7 +186,7 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins,
             # fig0.savefig('results/test/'+str(epoch).zfill(3) + '_comparisons.png')
                                                   
     #Save trained model
-    torch.save(net.state_dict(), 'model/'+fileName+'.pth')
+    torch.save(net.state_dict(), 'results/model/'+fileName+'.pth')
 
     #Save Loss graphic
     # fig1, ax1 = plt.subplots()
@@ -195,8 +198,10 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins,
     # ax1.set_ylabel("Loss")
     # ax1.set_ylim(top = 1.1*max(max(train_loss), max(test_loss)) , bottom = 0.9*min(min(train_loss), min(test_loss)))
     # fig1.savefig('results/plots/relu_up'+str(not conv_transpose)+'_e'+str(epochs)+'_lr'+str(learning_rate)+'_losses.png')
-    np.save('results/plots/iterations/'+fileName+'_train', train_loss)
-    np.save('results/plots/iterations/'+fileName+'_test', test_loss)
+    np.save('results/plots/'+fileName+'_train', train_loss)
+    np.save('results/plots/'+fileName+'_test', test_loss)
+    np.save('results/plots/'+fileName+'_train_e', train_loss_e)
+    np.save('results/plots/'+fileName+'_test_e', test_loss_e)
 
 
 if __name__ == "__main__":
