@@ -4,5 +4,7 @@ __pycache__/
 /experiments
 /reconstruction
 /plots
+/eResults
+plots.ipynb
 experiment.ipynb
 loadVoxel.ipynb
