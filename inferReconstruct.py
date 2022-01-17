@@ -11,12 +11,12 @@ from src.rec_utils import load_model
 
 
 #Set paths
-folder = 'running1'
-dataset_dir = 'data/lensless_videos_dataset/' + folder
-test_lensless_path = dataset_dir + '/lensless_events'
-test_gt_path = dataset_dir + '/gt_events'
+folder = 'Car1'
+dataset_dir = 'data/timewindows/' + folder
+test_lensless_path = dataset_dir + '/lensless'
+test_gt_path = dataset_dir + '/gt'
 #model_path = 'model/arch(Unet)-e(300)-l(L1)-o(Adam)-lr(1e-05).pth'
-model_path = 'model/arch(Unet)-e(300)-l(MSE)-o(Adam)-lr(1e-05).pth'
+model_path = 'model/arch(Unet)-e(30)-l(MSE)-o(Adam)-lr(1e-05).pth'
 #model_path = 'model/500_state_dict.pth'
 save_path = 'results/inference/'
 
