@@ -118,50 +118,7 @@ class ToVoxelGridPytorch:
 
         return voxel_grid
 
-
-class ToVoxelGridCPP:
-    '''
-    Transforms EventData into Voxel Grid.
-    Input: AER in form of EventData object
-    '''
-    def __init__(self, num_bins):
-        assert(num_bins > 0)
-        self.num_bins = num_bins
-
-    def __call__(self, events):
-        height = events.height
-        width = events.width
-
-        '''
-        Takes in EventData object, returns 3-dim array
-        '''
-        assert(events.total_events() > 0)
-        assert(width > 0)
-        assert(height > 0)
-
-        # voxel_grid = np.zeros((self.num_bins * height * width,), np.float32)
-
-        # normalize the event timestamps so that they lie between 0 and num_bins
-        last_stamp = events.t[-1]
-        first_stamp = events.t[0]
-        deltaT = last_stamp - first_stamp
-
-        if deltaT == 0:
-            deltaT = 1.0
-
-        ts = (self.num_bins - 1) * (events.t - first_stamp) / deltaT
-        xs = events.x.astype(np.int32)
-        ys = events.y.astype(np.int32)
-        pols = events.p
-        num_elements = self.num_bins*height*width
-
-        voxel_grid = vox_cpp.voxel_transform(ts, xs, ys, pols, width, height, self.num_bins)
-
-        voxel_grid = np.reshape(voxel_grid, (self.num_bins, height, width))
-
-        return voxel_grid
-
-class ToVoxelGridCython:
+class ToVoxelGrid:
     '''
     Transforms EventData into Voxel Grid.
     Input: AER in form of EventData object
@@ -218,32 +175,18 @@ class ToVoxelGridCython:
         right_weights = vals_right[valid_indices]
 
         indices = np.concatenate((left_indices, right_indices))
-        weights = np.concatenate((left_weights, right_weights)).astype(np.float32)
+        weights = np.concatenate((left_weights, right_weights))
 
-        # print(indices.dtype)
-        # print(weights.dtype)
+        voxel_grid = np.bincount(indices, weights=weights, minlength=(self.num_bins * height * width))
+        # voxel_grid = np.zeros(self.num_bins * height * width, dtype=np.float32)
+        # np.add.at(voxel_grid, indices, weights)
         
-        # print(np.max(indices))
-
-        # voxel_grid = np.bincount(indices, weights=weights, minlength=(self.num_bins * height * width))
-        voxel_grid = vg.cython_bincount(indices, weights=weights, minlength=(self.num_bins*height*width))
-        # print(voxel_grid.dtype)
-        # exit()
-        # print(vg)
-
         voxel_grid = np.reshape(voxel_grid, (self.num_bins, height, width))
 
         return voxel_grid
 
-'''
-Transforms on windows of the AER stream.
- - Event image (histogram)
- - Voxel grid
-
-Voxel grid code adapted from https://github.com/uzh-rpg/rpg_e2vid/blob/master/utils/inference_utils.py
-'''
-
-class ToVoxelGrid:
+#Allows positive-only voxel grids
+class ToVoxelGrid2:
     '''
     Transforms EventData into Voxel Grid.
     Input: AER in form of EventData object
@@ -277,7 +220,7 @@ class ToVoxelGrid:
         xs = events.x.astype(np.int32)
         ys = events.y.astype(np.int32)
         pols = events.p.astype(np.int32)
-        pols[pols == 0] = -1  # polarity should be +1 / -1
+        pols[pols == 0] = 1  # polarity should be +1 / -1
 
         tis = ts.astype(np.int32)
         dts = (ts - tis).astype(np.float32)

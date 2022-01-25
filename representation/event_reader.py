@@ -29,6 +29,8 @@ class EventData:
     def __repr__(self):
         return f'{self.width}x{self.height} AER w/ {self.total_events()} events'
 
+    def __len__(self):
+        return(len(self.t))
 
 class NumEventsIter:
     '''

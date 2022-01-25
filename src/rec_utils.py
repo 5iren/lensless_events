@@ -535,7 +535,9 @@ def load_model(path_to_model):
     print('Loading model {}...'.format(path_to_model))
     raw_model = torch.load(path_to_model)
     arch = raw_model['arch']
-    print(arch)
+    #print(f"arch: {arch}")
+    #print(f"raw model: {raw_model['model']}")
+    #brea
 
     try:
         model_type = raw_model['model']

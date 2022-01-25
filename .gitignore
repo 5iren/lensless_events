@@ -8,3 +8,5 @@ __pycache__/
 plots.ipynb
 experiment.ipynb
 loadVoxel.ipynb
+voxel2.ipynb
+/results/inference/old

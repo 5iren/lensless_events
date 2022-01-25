@@ -11,12 +11,14 @@ from src.rec_utils import load_model
 
 
 #Set paths
-folder = 'Car1'
+folder = 'Bird1'
 dataset_dir = 'data/timewindows/' + folder
 test_lensless_path = dataset_dir + '/lensless'
 test_gt_path = dataset_dir + '/gt'
 #model_path = 'model/arch(Unet)-e(300)-l(L1)-o(Adam)-lr(1e-05).pth'
-model_path = 'model/arch(Unet)-e(30)-l(MSE)-o(Adam)-lr(1e-05).pth'
+#model_path = 'model/arch(Unet)-e(30)-l(MSE)-o(Adam)-lr(1e-05).pth'
+#model_path = 'model/arch(Unet)-e(32)-l(MSE)-o(Adam)-lr(1e-05).pth'
+model_path = 'model/arch(Unet)-e(100)-l(MSE)-o(Adam)-lr(1e-05).pth'
 #model_path = 'model/500_state_dict.pth'
 save_path = 'results/inference/'
 
@@ -115,36 +117,36 @@ with torch.no_grad():
         gt_new = ( gt_v - gt_v.min() ) / ( gt_v.max() - gt_v.min() )
         output_new = ( output_v - output_v.min() ) / ( output_v.max() - output_v.min() )
 
-        #Show in Plot
-        fig, ax = plt.subplots(1,5, figsize=(18,3))
-        fig.tight_layout()
-        ax[0].imshow(lensless_new)
-        ax[0].set_title("Lensless events")
-        ax[1].imshow(gt_new)
-        ax[1].set_title("Ground Truth events")
-        ax[2].imshow(output_new)
-        ax[2].set_title("CNN Output")
-        ax[3].imshow(gt_rec, cmap = 'gray')
-        ax[3].set_title("Ground Truth Reconstruction")
-        ax[4].imshow(output_rec, cmap = 'gray')
-        ax[4].set_title("CNN Output Reconstruction")
-        ax[0].axis('off')
-        ax[1].axis('off')
-        ax[2].axis('off')
-        ax[3].axis('off')
-        ax[4].axis('off')
-        plt.show()
+        # #Show in Plot
+        # fig, ax = plt.subplots(1,5, figsize=(18,3))
+        # fig.tight_layout()
+        # ax[0].imshow(lensless_new)
+        # ax[0].set_title("Lensless events")
+        # ax[1].imshow(gt_new)
+        # ax[1].set_title("Ground Truth events")
+        # ax[2].imshow(output_new)
+        # ax[2].set_title("CNN Output")
+        # ax[3].imshow(gt_rec, cmap = 'gray')
+        # ax[3].set_title("Ground Truth Reconstruction")
+        # ax[4].imshow(output_rec, cmap = 'gray')
+        # ax[4].set_title("CNN Output Reconstruction")
+        # ax[0].axis('off')
+        # ax[1].axis('off')
+        # ax[2].axis('off')
+        # ax[3].axis('off')
+        # ax[4].axis('off')
+        # plt.show()
         
-        if result_num == 10:
-            break
+        # if result_num == 10:
+        #     break
 
         #Show image
         #cv2.imshow('Reconstruction', output_rec)
         #cv2.waitKey(1)
 
         #Save images
-        #cv2.imwrite('results/inference/rec/img'+str(result_num).zfill(3)+'.png', output_rec*255)
-        #cv2.imwrite('results/inference/gt/img'+str(result_num).zfill(3)+'.png', gt_rec*255)
+        cv2.imwrite('results/inference/rec/img'+str(result_num).zfill(3)+'.png', output_rec*255)
+        cv2.imwrite('results/inference/gt/img'+str(result_num).zfill(3)+'.png', gt_rec*255)
     #cv2.destroyAllWindows()
 
 

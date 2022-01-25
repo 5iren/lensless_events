@@ -23,7 +23,7 @@ class UnNormalize(object):
             # The normalize code -> t.sub_(m).div_(s)
         return tensor
 
-#Create dataset class
+#Create dataset class: creates event volume with voxel grid method (B, H, W)
 class lenslessEventsVoxel(Dataset):
     def __init__(self, lensless_events_dir, gt_events_dir, num_bins = 5, transform = None):
         self.lensless_events_dir = lensless_events_dir
@@ -93,7 +93,146 @@ class lenslessEventsVoxel(Dataset):
 
         return lensless_voxel, gt_voxel
 
-#Create dataset class
+#Create dataset class: creates one event volume with voxel grid method for each polarity and concatenates along time dimension (Bx2, H, W)
+class lenslessEventsVoxel2(Dataset):
+    def __init__(self, lensless_events_dir, gt_events_dir, num_bins = 5, transform = None):
+        self.lensless_events_dir = lensless_events_dir
+        self.gt_events_dir = gt_events_dir
+        self.num_bins = num_bins
+        self.width = 346
+        self.height = 260
+        self.transform = transform
+        #From computing mean and std on whole dataset
+        self.lensless_mean = 0.0013
+        self.lensless_std = 0.1483
+        self.gt_mean = 0.0011
+        self.gt_std = 0.2928
+
+        #Get list of event windows
+        _, _, self.lensless_event_files = next(os.walk(self.lensless_events_dir))
+        self.lensless_event_files.sort()
+        
+        _, _, self.gt_event_files = next(os.walk(self.gt_events_dir))
+        self.gt_event_files.sort()
+
+    def __len__(self):
+        return len(self.lensless_event_files)
+
+    def __getitem__(self, idx):
+        ##### Get Lensless voxel grid #####
+        #Create voxel grid from events
+        lensless_data = np.load(os.path.join(self.lensless_events_dir, self.lensless_event_files[idx]))
+        t = lensless_data['t']
+        x = lensless_data['x']
+        y = lensless_data['y']
+        p = lensless_data['p']
+
+        #Partition between positive and negative
+        positive_events = p.nonzero()
+        negative_events = np.where(p == 0)
+        t_pos = t[positive_events]
+        t_neg = t[negative_events]
+        x_pos = x[positive_events]
+        x_neg = x[negative_events]
+        y_pos = y[positive_events]
+        y_neg = y[negative_events]
+        p_pos = p[positive_events]
+        p_neg = p[negative_events]
+
+        #Transform into voxel grids
+        pos_events = event_reader.EventData(t_pos, x_pos, y_pos, p_pos, self.width, self.height)
+        neg_events = event_reader.EventData(t_neg, x_neg, y_neg, p_neg, self.width, self.height)
+        
+        #Check length is not 0
+        if len(pos_events) > 0:
+            lensless_pos_voxel = event_transforms.ToVoxelGrid2(self.num_bins)(pos_events)
+        else:
+            lensless_pos_voxel = np.zeros((self.num_bins, self.height, self.width))
+
+        if len(neg_events) > 0:
+            lensless_neg_voxel = event_transforms.ToVoxelGrid2(self.num_bins)(neg_events)
+        else:
+            lensless_neg_voxel = np.zeros((self.num_bins, self.height, self.width))
+
+        #Concatenate along time dimension
+        lensless_voxel = np.concatenate((lensless_neg_voxel, lensless_pos_voxel))
+
+        #Normalize voxel 
+        #lensless_voxel -= self.lensless_mean
+        #lensless_voxel /= self.lensless_std
+
+        #Convert to tensor
+        lensless_voxel = torch.as_tensor(lensless_voxel, dtype=torch.float32)
+      
+      
+        ##### Get GT voxel grid #####
+        #Create voxel grid from events
+        gt_data = np.load(os.path.join(self.gt_events_dir, self.gt_event_files[idx]))
+        t = gt_data['t']
+        x = gt_data['x']
+        y = gt_data['y']
+        p = gt_data['p']
+
+        #Partition between positive and negative
+        positive_events = p.nonzero()
+        negative_events = np.where(p == 0)
+        t_pos = t[positive_events]
+        t_neg = t[negative_events]
+        x_pos = x[positive_events]
+        x_neg = x[negative_events]
+        y_pos = y[positive_events]
+        y_neg = y[negative_events]
+        p_pos = p[positive_events]
+        p_neg = p[negative_events]
+
+        #Transform into voxel grids
+        pos_events = event_reader.EventData(t_pos, x_pos, y_pos, p_pos, self.width, self.height)
+        neg_events = event_reader.EventData(t_neg, x_neg, y_neg, p_neg, self.width, self.height)
+        
+        #Check length is not 0
+        if len(pos_events) > 0:
+            gt_pos_voxel = event_transforms.ToVoxelGrid2(self.num_bins)(pos_events)
+        else:
+            gt_pos_voxel = np.zeros((self.num_bins, self.height, self.width))
+
+        if len(neg_events) > 0:
+            gt_neg_voxel = event_transforms.ToVoxelGrid2(self.num_bins)(neg_events)
+        else:
+            gt_neg_voxel = np.zeros((self.num_bins, self.height, self.width))
+
+        #Concatenate along time dimension
+        gt_voxel = np.concatenate((gt_neg_voxel, gt_pos_voxel))
+
+        #Normalize voxel 
+        #gt_voxel -= self.gt_mean
+        #gt_voxel /= self.gt_std
+
+        #Convert to tensor
+        gt_voxel = torch.as_tensor(gt_voxel, dtype=torch.float32)
+
+        #Apply transforms
+        # if self.transform:
+        #     lensless_voxel = self.transform(lensless_voxel)
+        #     gt_voxel = self.transform(gt_voxel)
+
+        #Statistics
+        # print("Lensless statistics: ")
+        # print(f"Lensless mean: {lensless_voxel.mean()}")
+        # print(f"Lensless max: {lensless_voxel.max()}")
+        # print(f"Lensless min: {lensless_voxel.min()}")
+        # print(f"Lensless std: {lensless_voxel.std()}")
+        # print(f"Non zero values: {len(lensless_voxel.nonzero())}")
+
+        # print("GT statistics: ")
+        # print(f"GT mean: {gt_voxel.mean()}")
+        # print(f"GT max: {gt_voxel.max()}")
+        # print(f"GT min: {gt_voxel.min()}")
+        # print(f"GT std: {gt_voxel.std()}")
+        # print(f"Non zero values: {len(gt_voxel.nonzero())}")
+
+        return lensless_voxel, gt_voxel
+
+#Create dataset class: creates event volume with accumulation method (B, H, W)
 class lenslessEvents(Dataset):
     def __init__(self, lensless_events_dir, gt_events_dir, num_bins = 3, transform = None):
         self.lensless_events_dir = lensless_events_dir
@@ -156,3 +295,4 @@ class lenslessEvents(Dataset):
             gt_events = self.transform(gt_events)
 
         return lensless_events, gt_events
+

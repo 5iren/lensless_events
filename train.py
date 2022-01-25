@@ -9,7 +9,7 @@ from model.unet import UNet
 #from model.unet2 import UNet
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
-from src.nn_utils import lenslessEventsVoxel, lenslessEvents
+from src.nn_utils import lenslessEventsVoxel, lenslessEvents, lenslessEventsVoxel2
 import time
 from tqdm import tqdm
 
@@ -211,7 +211,7 @@ if __name__ == "__main__":
     parser.add_argument("-i",  "--dataset_dir",     help="directory",                   default="data/timewindows/")
     parser.add_argument("-e",  "--epochs",          help="total number of epochs",      type=int,   default=20)
     parser.add_argument("-te", "--test_epochs",     help="epochs to produce result",    type=int,   default=5)
-    parser.add_argument("-lr", "--learning_rate",   help="for adam optimizer",          type=float, default=1e-6)
+    parser.add_argument("-lr", "--learning_rate",   help="for adam optimizer",          type=float, default=1e-5)
     parser.add_argument("-b",  "--batch_size",      help="batch size for training",     type=int,   default=32)
     parser.add_argument("-c",  "--num_bins",        help="number of bins or channels",  type=int,   default=5)
     parser.add_argument("-l",  "--loss_fn",         help="Loss function",               type=str,   default='MSE')
