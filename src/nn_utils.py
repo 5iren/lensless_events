@@ -33,10 +33,10 @@ class lenslessEventsVoxel(Dataset):
         self.height = 260
         self.transform = transform
         #From computing mean and std on whole dataset
-        self.lensless_mean = 0.0013
-        self.lensless_std = 0.1483
-        self.gt_mean = 0.0011
-        self.gt_std = 0.2928
+        #self.lensless_mean = 0.0013
+        #self.lensless_std = 0.1483
+        #self.gt_mean = 0.0011
+        #self.gt_std = 0.2928
 
         #Get list of event windows
         _, _, self.lensless_event_files = next(os.walk(self.lensless_events_dir))
@@ -61,12 +61,11 @@ class lenslessEventsVoxel(Dataset):
         lensless_voxel = event_transforms.ToVoxelGrid(self.num_bins)(lensless_event_data)
 
         #Normalize voxel 
-        #lensless_voxel -= self.lensless_mean
-        #lensless_voxel /= self.lensless_std
+        lensless_voxel -= lensless_voxel.min()
+        lensless_voxel /= (lensless_voxel.max() - lensless_voxel.min())
 
         #Convert to tensor
         lensless_voxel = torch.as_tensor(lensless_voxel, dtype=torch.float32)
-      
       
         ##### Get GT voxel grid #####
         #Create voxel grid from events
@@ -80,8 +79,8 @@ class lenslessEventsVoxel(Dataset):
         gt_voxel = event_transforms.ToVoxelGrid(self.num_bins)(gt_event_data)
 
         #Normalize voxel 
-        #gt_voxel -= self.gt_mean
-        #gt_voxel /= self.gt_std
+        gt_voxel -= gt_voxel.min()
+        gt_voxel /= (gt_voxel.max() - gt_voxel.min())
 
         #Convert to tensor
         gt_voxel = torch.as_tensor(gt_voxel, dtype=torch.float32)
