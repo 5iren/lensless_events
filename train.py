@@ -85,7 +85,8 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins,
 
         #Train
         net.train()
-        for data in tqdm(trainloader):
+        #for data in tqdm(trainloader):
+        for data in trainloader:
             #Get image and ground truth
             lensless, gt = data[0].to(device), data[1].to(device)
 
@@ -103,7 +104,8 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins,
         #Test
         net.eval()
         with torch.no_grad():
-            for data in tqdm(testloader):
+            #for data in tqdm(testloader):
+            for data in testloader:
                 #Get image and ground truth
                 test_lensless,  test_gt = data[0].to(device), data[1].to(device)
 
@@ -234,7 +236,7 @@ if __name__ == "__main__":
     print("-------Training Parameters--------")
     print("----------------------------------")
     print("Epochs:                  ", epochs)
-    print("Test epochs:             ", test_epochs)
+    print("Bins:                    ", num_bins)
     print("Batch size:              ", batch_size)
     print("Loss function:           ", loss_fn)
     print("Optimizer:               ", optim)

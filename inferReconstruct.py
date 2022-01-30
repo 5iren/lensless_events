@@ -11,7 +11,7 @@ from src.rec_utils import load_model
 
 
 #Set paths
-folder = 'Bird1'
+folder = 'Dog1'
 dataset_dir = 'data/timewindows/' + folder
 test_lensless_path = dataset_dir + '/lensless'
 test_gt_path = dataset_dir + '/gt'
@@ -49,7 +49,7 @@ net.load_state_dict(torch.load(model_path))
 net.eval()
 
 #Load E2VID model
-model_path = 'reconstruction/E2VID_lightweight.pth.tar'
+model_path = 'model/E2VID_lightweight.pth.tar'
 model = load_model(model_path)
 #model.to(device)
 model.eval()

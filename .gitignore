@@ -3,10 +3,6 @@ __pycache__/
 /.vscode
 /experiments
 /reconstruction
-/plots
 /eResults
-plots.ipynb
 experiment.ipynb
 loadVoxel.ipynb
-voxel2.ipynb
-/results/inference/old
