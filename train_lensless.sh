@@ -4,7 +4,7 @@
 #SBATCH -p sjayasurgpu1
 #SBATCH -q sjayasur
 #SBATCH --gres=gpu:1
-#SBATCH -t 0-1:0 
+#SBATCH -t 1-0:0 
 #SBATCH --constraint=RTX6000
 #SBATCH -o %j.out
 #SBATCH -e %j.err
