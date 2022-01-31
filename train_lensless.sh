@@ -15,11 +15,4 @@ module load anaconda/py3
 
 source activate lensless
 
-python train.py -i data/lensless_videos_dataset/ -e 100 -lr 1e-3 
-echo "1 done"
-python train.py -i data/lensless_videos_dataset/ -e 100 -lr 1e-4 
-echo "2 done"
-python train.py -i data/lensless_videos_dataset/ -e 100 -lr 1e-5
-echo "3 done"
-python train.py -i data/lensless_videos_dataset/ -e 100 -lr 1e-6
-echo "4 done"
+python train.py -i data/timewindows/ -e 20 -lr 1e-5 
