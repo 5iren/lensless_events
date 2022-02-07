@@ -21,16 +21,12 @@ Pandas:
 
 pysummary:
 
-    pip install pysummary
+    pip install torchsummary
 
 ## Scripts:
 
-`simPSF.py` simulates grayscale video captured with lensless camera and a diffraction layer (PSF convolution) 
+`train.py` trains UNet model and saves trained model in `results/model/{name}.pth`
 
-`createTimeWindows.py` creates numpy array files per event window from an event .txt file 
+`reconstruct.py` performs inference and reconstruction from infered voxels using [rpg_e2vid](https://github.com/uzh-rpg/rpg_e2vid) functions
 
-`train.py` trains model defined in `model/` and saves trained model in `model/${epoch}_state_dict.pth`
-
-`test.py` performs inference from model and state dictionary
-
-`reconstruct.py` performs reconstruction from infered voxels using [rpg_e2vid](https://github.com/uzh-rpg/rpg_e2vid) functions
+`plots.ipynb` plots losses

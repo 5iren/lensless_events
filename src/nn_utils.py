@@ -5,24 +5,6 @@ import torch
 from torch.utils.data import Dataset
 from representation import event_reader, event_transforms
 
-#Unormalize
-class UnNormalize(object):
-    def __init__(self, mean, std):
-        self.mean = mean
-        self.std = std
-
-    def __call__(self, tensor):
-        """
-        Args:
-            tensor (Tensor): Tensor image of size (C, H, W) to be normalized.
-        Returns:
-            Tensor: Normalized image.
-        """
-        for t, m, s in zip(tensor, self.mean, self.std):
-            t.mul_(s).add_(m)
-            # The normalize code -> t.sub_(m).div_(s)
-        return tensor
-
 #Create dataset class: creates event volume with voxel grid method (B, H, W)
 class lenslessEventsVoxel(Dataset):
     def __init__(self, lensless_events_dir, gt_events_dir, num_bins = 5, transform = None):
@@ -45,6 +27,8 @@ class lenslessEventsVoxel(Dataset):
         _, _, self.gt_event_files = next(os.walk(self.gt_events_dir))
         self.gt_event_files.sort()
 
+        print("\tDataset: Normalized")
+
     def __len__(self):
         return len(self.lensless_event_files)
 
@@ -60,9 +44,11 @@ class lenslessEventsVoxel(Dataset):
         lensless_event_data = event_reader.EventData(t, x, y, p, self.width, self.height)
         lensless_voxel = event_transforms.ToVoxelGrid(self.num_bins)(lensless_event_data)
 
-        #Normalize voxel 
-        lensless_voxel -= lensless_voxel.min()
-        lensless_voxel /= (lensless_voxel.max() - lensless_voxel.min())
+        #Normalize voxel
+        lensless_voxel_min = lensless_voxel.min()
+        lensless_voxel_max = lensless_voxel.max() 
+        lensless_voxel -= lensless_voxel_min
+        lensless_voxel /= (lensless_voxel_max - lensless_voxel_min)
 
         #Convert to tensor
         lensless_voxel = torch.as_tensor(lensless_voxel, dtype=torch.float32)
@@ -79,8 +65,76 @@ class lenslessEventsVoxel(Dataset):
         gt_voxel = event_transforms.ToVoxelGrid(self.num_bins)(gt_event_data)
 
         #Normalize voxel 
-        gt_voxel -= gt_voxel.min()
-        gt_voxel /= (gt_voxel.max() - gt_voxel.min())
+        gt_voxel_min = gt_voxel.min()
+        gt_voxel_max = gt_voxel.max()
+        gt_voxel -= gt_voxel_min 
+        gt_voxel /= (gt_voxel_max - gt_voxel_min )
+
+        #Convert to tensor
+        gt_voxel = torch.as_tensor(gt_voxel, dtype=torch.float32)
+
+        #Apply transforms
+        if self.transform:
+            lensless_voxel = self.transform(lensless_voxel)
+            gt_voxel = self.transform(gt_voxel)
+
+        return lensless_voxel, gt_voxel, lensless_voxel_min, lensless_voxel_max, gt_voxel_min, gt_voxel_max
+
+#Unnormalized version
+class lenslessEventsVoxelUN(Dataset):
+    def __init__(self, lensless_events_dir, gt_events_dir, num_bins = 5, transform = None):
+        self.lensless_events_dir = lensless_events_dir
+        self.gt_events_dir = gt_events_dir
+        self.num_bins = num_bins
+        self.width = 346
+        self.height = 260
+        self.transform = transform
+
+        #Get list of event windows
+        _, _, self.lensless_event_files = next(os.walk(self.lensless_events_dir))
+        self.lensless_event_files.sort()
+        
+        _, _, self.gt_event_files = next(os.walk(self.gt_events_dir))
+        self.gt_event_files.sort()
+
+        print("\tDataset: Unnormalized")
+
+    def __len__(self):
+        return len(self.lensless_event_files)
+
+    def __getitem__(self, idx):
+        ##### Get Lensless voxel grid #####
+        #Create voxel grid from events
+        lensless_data = np.load(os.path.join(self.lensless_events_dir, self.lensless_event_files[idx]))
+        t = lensless_data['t']
+        x = lensless_data['x']
+        y = lensless_data['y']
+        p = lensless_data['p']
+
+        lensless_event_data = event_reader.EventData(t, x, y, p, self.width, self.height)
+        lensless_voxel = event_transforms.ToVoxelGrid(self.num_bins)(lensless_event_data)
+
+        #Normalize voxel 
+        #lensless_voxel -= lensless_voxel.min()
+        #lensless_voxel /= (lensless_voxel.max() - lensless_voxel.min())
+
+        #Convert to tensor
+        lensless_voxel = torch.as_tensor(lensless_voxel, dtype=torch.float32)
+      
+        ##### Get GT voxel grid #####
+        #Create voxel grid from events
+        gt_data = np.load(os.path.join(self.gt_events_dir, self.gt_event_files[idx]))
+        t = gt_data['t']
+        x = gt_data['x']
+        y = gt_data['y']
+        p = gt_data['p']
+
+        gt_event_data = event_reader.EventData(t, x, y, p, self.width, self.height)
+        gt_voxel = event_transforms.ToVoxelGrid(self.num_bins)(gt_event_data)
+
+        #Normalize voxel 
+        #gt_voxel -= gt_voxel.min()
+        #gt_voxel /= (gt_voxel.max() - gt_voxel.min())
 
         #Convert to tensor
         gt_voxel = torch.as_tensor(gt_voxel, dtype=torch.float32)
@@ -102,10 +156,10 @@ class lenslessEventsVoxel2(Dataset):
         self.height = 260
         self.transform = transform
         #From computing mean and std on whole dataset
-        self.lensless_mean = 0.0013
-        self.lensless_std = 0.1483
-        self.gt_mean = 0.0011
-        self.gt_std = 0.2928
+        # self.lensless_mean = 0.0013
+        # self.lensless_std = 0.1483
+        # self.gt_mean = 0.0011
+        # self.gt_std = 0.2928
 
         #Get list of event windows
         _, _, self.lensless_event_files = next(os.walk(self.lensless_events_dir))
@@ -113,6 +167,8 @@ class lenslessEventsVoxel2(Dataset):
         
         _, _, self.gt_event_files = next(os.walk(self.gt_events_dir))
         self.gt_event_files.sort()
+
+        print("\tDataset: Double voxel grid")
 
     def __len__(self):
         return len(self.lensless_event_files)
@@ -248,6 +304,9 @@ class lenslessEvents(Dataset):
         _, _, self.gt_event_files = next(os.walk(self.gt_events_dir))
         self.gt_event_files.sort()
 
+        print("\tDataset: Event Accumulation")
+
+
     def __len__(self):
         return len(self.lensless_event_files)
 
@@ -295,3 +354,108 @@ class lenslessEvents(Dataset):
 
         return lensless_events, gt_events
 
+#Add clipping normalization -1 to 1
+class lenslessEventsVoxelClip(Dataset):
+    def __init__(self, lensless_events_dir, gt_events_dir, num_bins = 5, transform = None):
+        self.lensless_events_dir = lensless_events_dir
+        self.gt_events_dir = gt_events_dir
+        self.num_bins = num_bins
+        self.width = 346
+        self.height = 260
+        self.transform = transform
+        #From computing mean and std on whole dataset
+        #self.lensless_mean = 0.0013
+        #self.lensless_std = 0.1483
+        #self.gt_mean = 0.0011
+        #self.gt_std = 0.2928
+
+        #Get list of event windows
+        _, _, self.lensless_event_files = next(os.walk(self.lensless_events_dir))
+        self.lensless_event_files.sort()
+        
+        _, _, self.gt_event_files = next(os.walk(self.gt_events_dir))
+        self.gt_event_files.sort()
+
+        print("\tDataset: [-1, 1] Clipped & Normalized")
+
+
+    def __len__(self):
+        return len(self.lensless_event_files)
+
+    def __getitem__(self, idx):
+        ##### Get Lensless voxel grid #####
+        #Create voxel grid from events
+        lensless_data = np.load(os.path.join(self.lensless_events_dir, self.lensless_event_files[idx]))
+        t = lensless_data['t']
+        x = lensless_data['x']
+        y = lensless_data['y']
+        p = lensless_data['p']
+
+        lensless_event_data = event_reader.EventData(t, x, y, p, self.width, self.height)
+        lensless_voxel = event_transforms.ToVoxelGrid(self.num_bins)(lensless_event_data)
+        lensless_voxel = torch.as_tensor(lensless_voxel, dtype=torch.float32)
+
+        #Perform clipping operation
+        event_volume_flat = lensless_voxel.view(-1)
+        nonzero = torch.nonzero(event_volume_flat)
+        nonzero_values = event_volume_flat[nonzero]
+        if nonzero_values.shape[0]:
+            lower = torch.kthvalue(nonzero_values,
+                                   max(int(0.02 * nonzero_values.shape[0]), 1),
+                                   dim=0)[0][0]
+            upper = torch.kthvalue(nonzero_values,
+                                   max(int(0.98 * nonzero_values.shape[0]), 1),
+                                   dim=0)[0][0]
+            max_val = max(abs(lower), upper)
+            lensless_voxel = torch.clamp(lensless_voxel, -max_val, max_val)
+            
+            #Normalize voxel
+            lensless_voxel /= max_val
+            # lensless_voxel_min = lensless_voxel.min()
+            # lensless_voxel_max = lensless_voxel.max() 
+            # lensless_voxel -= lensless_voxel_min
+            # lensless_voxel /= (lensless_voxel_max - lensless_voxel_min)
+
+
+      
+        ##### Get GT voxel grid #####
+        #Create voxel grid from events
+        gt_data = np.load(os.path.join(self.gt_events_dir, self.gt_event_files[idx]))
+        t = gt_data['t']
+        x = gt_data['x']
+        y = gt_data['y']
+        p = gt_data['p']
+
+        gt_event_data = event_reader.EventData(t, x, y, p, self.width, self.height)
+        gt_voxel = event_transforms.ToVoxelGrid(self.num_bins)(gt_event_data)
+        gt_voxel = torch.as_tensor(gt_voxel, dtype=torch.float32)
+
+
+        #Perform clipping operation
+        event_volume_flat = gt_voxel.view(-1)
+        nonzero = torch.nonzero(event_volume_flat)
+        nonzero_values = event_volume_flat[nonzero]
+        if nonzero_values.shape[0]:
+            lower = torch.kthvalue(nonzero_values,
+                                   max(int(0.02 * nonzero_values.shape[0]), 1),
+                                   dim=0)[0][0]
+            upper = torch.kthvalue(nonzero_values,
+                                   max(int(0.98 * nonzero_values.shape[0]), 1),
+                                   dim=0)[0][0]
+            max_val = max(abs(lower), upper)
+            gt_voxel = torch.clamp(gt_voxel, -max_val, max_val)
+
+            #Normalize voxel
+            gt_voxel /= max_val 
+            # gt_voxel_min = gt_voxel.min()
+            # gt_voxel_max = gt_voxel.max()
+            # gt_voxel -= gt_voxel_min 
+            # gt_voxel /= (gt_voxel_max - gt_voxel_min )
+
+
+        #Apply transforms
+        if self.transform:
+            lensless_voxel = self.transform(lensless_voxel)
+            gt_voxel = self.transform(gt_voxel)
+
+        return lensless_voxel, gt_voxel, max_val
