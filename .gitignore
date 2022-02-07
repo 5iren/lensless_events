@@ -1,8 +1,8 @@
 __pycache__/
-/data
 /.vscode
-/experiments
-/reconstruction
-/eResults
+/data
+/plots
+/model/old
+/results/inference/videos
 experiment.ipynb
 loadVoxel.ipynb
