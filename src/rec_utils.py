@@ -531,9 +531,9 @@ class E2VIDRecurrent(BaseE2VID):
         img_pred, states = self.unetrecurrent.forward(event_tensor, prev_states)
         return img_pred, states
 
-def load_model(path_to_model):
+def load_model(path_to_model, device):
     print('Loading model {}...'.format(path_to_model))
-    raw_model = torch.load(path_to_model)
+    raw_model = torch.load(path_to_model, map_location=device)
     arch = raw_model['arch']
     #print(f"arch: {arch}")
     #print(f"raw model: {raw_model['model']}")

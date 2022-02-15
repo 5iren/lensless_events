@@ -10,7 +10,7 @@ from model.unet import UNet
 #from model.unet2 import UNet
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
-from src.nn_utils import lenslessEventsVoxelUN
+from src.nn_utils import lenslessEventsVoxel
 import time
 from tqdm import tqdm
 
@@ -22,7 +22,7 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins,
     train_gt_path = dataset_dir + "gt"
 
     #File name
-    arch = 'Unet'
+    arch = 'NORM'
     fileName = 'arch('+arch+')-e('+str(epochs)+')-l('+str(loss_fn)+')-o('+str(optim)+')-lr('+str(learning_rate)+')'
 
     #Load CUDA
@@ -38,10 +38,10 @@ def train(epochs, test_epochs, learning_rate, dataset_dir, batch_size, num_bins,
 
     #Create datasets
     print("[INFO] Loading dataset and dataloader...")
-    whole_dataset = lenslessEventsVoxelUN(train_lensless_path, train_gt_path, num_bins, transform = transform)
+    whole_dataset = lenslessEventsVoxel(train_lensless_path, train_gt_path, num_bins, transform = transform)
 
     #Train/Test split
-    train_data, test_data = torch.utils.data.random_split(whole_dataset, [int(len(whole_dataset)*0.7), len(whole_dataset)-int(len(whole_dataset)*0.7)])
+    train_data, test_data = torch.utils.data.random_split(whole_dataset, [int(len(whole_dataset)*0.7), len(whole_dataset)-int(len(whole_dataset)*0.7)], generator=torch.Generator().manual_seed(42))
 
     #Create dataloaders
     trainloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
@@ -146,7 +146,7 @@ if __name__ == "__main__":
     parser.add_argument("-e",  "--epochs",          help="total number of epochs",      type=int,   default=20)
     parser.add_argument("-te", "--test_epochs",     help="epochs to produce result",    type=int,   default=5)
     parser.add_argument("-lr", "--learning_rate",   help="for adam optimizer",          type=float, default=1e-5)
-    parser.add_argument("-b",  "--batch_size",      help="batch size for training",     type=int,   default=4)
+    parser.add_argument("-b",  "--batch_size",      help="batch size for training",     type=int,   default=32)
     parser.add_argument("-c",  "--num_bins",        help="number of bins or channels",  type=int,   default=5)
     parser.add_argument("-l",  "--loss_fn",         help="Loss function",               type=str,   default='MSE')
     parser.add_argument("-o",  "--optim",           help="Optimizer",                   type=str,   default='Adam')
