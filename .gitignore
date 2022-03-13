@@ -3,11 +3,11 @@ __pycache__/
 /data
 /plots
 /model/old
-/model/gaussian_tanh
-/model/single_gaussian
-/model/single_gaussian_small
-/model/wmse
+/model/e2vid_trained
+/model/seq
 /old
+/model/lpips
+/train_scripts
 /results/inference
 experiment.ipynb
 loadVoxel.ipynb

@@ -392,6 +392,8 @@ class UNetRecurrent(BaseUNet):
 
         self.encoders = nn.ModuleList()
         for input_size, output_size in zip(self.encoder_input_sizes, self.encoder_output_sizes):
+            #print(f"Input: {input_size} | Output: {output_size}")
+            #print(f"-------------------------------------------")
             self.encoders.append(RecurrentConvLayer(input_size, output_size,
                                                     kernel_size=5, stride=2, padding=2,
                                                     recurrent_block_type=recurrent_block_type,
@@ -534,7 +536,10 @@ class E2VIDRecurrent(BaseE2VID):
 def load_model(path_to_model, device):
     print('Loading model {}...'.format(path_to_model))
     raw_model = torch.load(path_to_model, map_location=device)
+    #print(f"Keys: {raw_model.keys()}")
     arch = raw_model['arch']
+    #print(f"Arch: {arch}")
+
     #print(f"arch: {arch}")
     #print(f"raw model: {raw_model['model']}")
     #brea
@@ -543,6 +548,8 @@ def load_model(path_to_model, device):
         model_type = raw_model['model']
     except KeyError:
         model_type = raw_model['config']['model']
+
+    #print(f"model type: {model_type}")
 
     # instantiate model
     model = eval(arch)(model_type)
