@@ -10,6 +10,7 @@ from src.rec_utils import load_model
 from model.unet import UNet
 import matplotlib.pyplot as plt
 import lpips
+# ignore this
 
 def display_postprocessing(lensless_v, gt_v, reconstruction_v):
     #Detach from GPU
@@ -65,7 +66,7 @@ def train(epochs, learning_rate, dataset_dir, batch_size, num_bins, arch_name, f
     ########## Models ##########
     #Load Custom Model
     print("[INFO] Loading models...")
-    rec_cnn = UNet(num_bins, num_bins) 
+    rec_cnn = UNet(num_bins, num_bins)
     rec_cnn.to(device)
     #summary(net, (num_bins, 260, 348)) #prints summary
 
@@ -88,9 +89,9 @@ def train(epochs, learning_rate, dataset_dir, batch_size, num_bins, arch_name, f
     else:
         print("[INFO] Finetuning E2VID")
     lensless_e2vid.to(device)
-    
+
     ########## Loss and optimizer ##########
-    #CNN Loss 
+    #CNN Loss
     if cnn_loss == "MSE" or cnn_loss == "mse":
         print("[INFO] CNN Loss: MSE")
         compute_cnn_loss = True
@@ -107,7 +108,7 @@ def train(epochs, learning_rate, dataset_dir, batch_size, num_bins, arch_name, f
     else:
         print("[INFO] E2VID Loss: NONE")
         compute_e2vid_loss = False
-    
+
     optimizer = torch.optim.Adam(list(rec_cnn.parameters()) + list(lensless_e2vid.parameters()), lr = learning_rate)
 
     ########## Train loop ##########
@@ -121,7 +122,7 @@ def train(epochs, learning_rate, dataset_dir, batch_size, num_bins, arch_name, f
     for epoch in range(1,epochs+1):
         train_running_loss = 0
         test_running_loss = 0
-       
+
         #Train
         rec_cnn.train()
         lensless_e2vid.train()
@@ -142,11 +143,11 @@ def train(epochs, learning_rate, dataset_dir, batch_size, num_bins, arch_name, f
 
                 # zero the parameter gradients
                 optimizer.zero_grad()
-                
+
                 lensless_v = lenslessf_v[:,ii]
                 gt_v = gtf_v[:,ii]
 
-                #Forward 
+                #Forward
                 reconstruction_v = rec_cnn(lensless_v)
 
                 #CNN Loss
@@ -154,7 +155,7 @@ def train(epochs, learning_rate, dataset_dir, batch_size, num_bins, arch_name, f
                     cnn_rec_loss = cnn_loss(reconstruction_v, gt_v)
                 else:
                     cnn_rec_loss = 0
-                
+
                 ######## E2VID ##########
                 #Pad (required by e2vid)
                 m = ReflectionPad2d((3,3,2,2))
@@ -187,11 +188,11 @@ def train(epochs, learning_rate, dataset_dir, batch_size, num_bins, arch_name, f
                     e2vid_rec_loss = e2vid_loss(lensless_rec, gt_rec).mean()
                 else:
                     e2vid_rec_loss = 0
-                
+
                 #Loss
                 loss = cnn_loss_weight*cnn_rec_loss + e2vid_loss_weight*e2vid_rec_loss
 
-                #Backward 
+                #Backward
                 loss.backward()
 
                 #Optimize
@@ -200,13 +201,13 @@ def train(epochs, learning_rate, dataset_dir, batch_size, num_bins, arch_name, f
                 #Accumulate frame loss to compute sequence loss
                 seq_running_loss += float(loss.item())
 
-            #Save loss per sequence on numpy array 
+            #Save loss per sequence on numpy array
             train_loss_s.append(seq_running_loss / seq_len)
 
             #Accumulate per sequence loss to compute epoch loss
             train_running_loss += (seq_running_loss / seq_len)
-            
-        #Save loss per epoch 
+
+        #Save loss per epoch
         train_loss_curr = train_running_loss / len(trainloader)
         train_loss_e.append(train_loss_curr)
 
@@ -233,7 +234,7 @@ def train(epochs, learning_rate, dataset_dir, batch_size, num_bins, arch_name, f
         ax[1][2].axis('off')
         fig.suptitle(f"Train Loss: {loss.item()}")
         plt.savefig(f"results/samples/{arch_name}/train_{epoch:03}.png")
-        
+
         #Test
         rec_cnn.eval()
         lensless_e2vid.eval()
@@ -250,11 +251,11 @@ def train(epochs, learning_rate, dataset_dir, batch_size, num_bins, arch_name, f
 
                 #for ii in tqdm(range(seq_len)):
                 for ii in range(seq_len):
-                    
+
                     lensless_v = lenslessf_v[:,ii]
                     gt_v = gtf_v[:,ii]
 
-                    #Forward 
+                    #Forward
                     reconstruction_v = rec_cnn(lensless_v)
 
                     #CNN Loss
@@ -262,7 +263,7 @@ def train(epochs, learning_rate, dataset_dir, batch_size, num_bins, arch_name, f
                         cnn_rec_loss = cnn_loss(reconstruction_v, gt_v)
                     else:
                         cnn_rec_loss = 0
-                    
+
                     ######## E2VID ##########
                     #Pad (required by e2vid)
                     m = ReflectionPad2d((3,3,2,2))
@@ -296,13 +297,13 @@ def train(epochs, learning_rate, dataset_dir, batch_size, num_bins, arch_name, f
                     #Accumulate frame loss to compute sequence loss
                     seq_running_loss += float(loss.item())
 
-                #Save loss per sequence on numpy array 
+                #Save loss per sequence on numpy array
                 test_loss_s.append(seq_running_loss / seq_len)
 
                 #Accumulate per sequence loss to compute epoch loss
                 test_running_loss += (seq_running_loss / seq_len)
 
-            #Save loss per epoch 
+            #Save loss per epoch
             test_loss_curr = test_running_loss / len(testloader)
             test_loss_e.append(test_loss_curr)
 
@@ -329,11 +330,11 @@ def train(epochs, learning_rate, dataset_dir, batch_size, num_bins, arch_name, f
         ax[1][2].axis('off')
         fig.suptitle(f"Test Loss: {loss.item()}")
         plt.savefig(f"results/samples/{arch_name}/test_{epoch:03}.png")
-        
+
 
         #Print Statistics
         print(f"[{epoch:3d} / {epochs:3d}] Train loss: {train_loss_curr:.6f} | Test loss: {test_loss_curr:.6f}")
-        
+
         if test_loss_curr < min_test_loss:
             min_test_loss = test_loss_curr
             print("[INFO] Saving best test model...")
@@ -406,7 +407,7 @@ if __name__ == "__main__":
     if not isExist:
         os.mkdir(f"results/plots/{arch_name}")
 
-    #Train 
+    #Train
     train(epochs, learning_rate, dataset_dir, batch_size, num_bins, arch_name, frozen_e2vid, cnn_loss, e2vid_loss, cnn_loss_weight, e2vid_loss_weight)
 
     print("Done!")
